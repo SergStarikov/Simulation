@@ -6,20 +6,22 @@
     <title>Рух тіла, кинутого горизонтально</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        #canvas-container { width: 100vw; height: 100vh; display: block; }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; height: 100vh; }
         .control-panel {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            width: 320px;
-            max-height: 90vh;
+            width: 340px;
+            min-width: 340px;
+            height: 100vh;
             overflow-y: auto;
-            backdrop-filter: blur(5px);
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            z-index: 10;
+        }
+        #canvas-container {
+            flex: 1;
+            height: 100vh;
+            position: relative;
         }
         .info-panel {
             position: absolute;
@@ -31,12 +33,13 @@
             border-radius: 8px;
             font-family: monospace;
             font-size: 1.1em;
+            z-index: 5;
         }
     </style>
 </head>
 <body>
 
-    <div id="canvas-container"></div>
+    <!-- Control panel is now a sidebar on the left -->
 
     <div class="control-panel">
         <h1 class="text-xl font-bold mb-4 text-blue-800">Рух кинутого тіла</h1>
@@ -79,10 +82,13 @@
         <p class="text-xs text-gray-500 mt-2 italic">* Ви можете обертати сцену мишкою у вільному режимі.</p>
     </div>
 
-    <div class="info-panel">
-        <div>Час (t): <span id="info-t">0.00</span> с</div>
-        <div>Дальність (x): <span id="info-x">0.00</span> м</div>
-        <div>Висота (y): <span id="info-y">50.00</span> м</div>
+    <!-- Canvas container is now to the right of the panel -->
+    <div id="canvas-container">
+        <div class="info-panel">
+            <div>Час (t): <span id="info-t">0.00</span> с</div>
+            <div>Дальність (x): <span id="info-x">0.00</span> м</div>
+            <div>Висота (y): <span id="info-y">50.00</span> м</div>
+        </div>
     </div>
 
     <!-- Three.js Libraries -->
@@ -117,10 +123,14 @@
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xe0f7fa); // Світло-блакитне небо
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // Використовуємо розміри контейнера замість вікна
+        const canvasWidth = container.clientWidth;
+        const canvasHeight = container.clientHeight;
+
+        const camera = new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 0.1, 1000);
         
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setSize(canvasWidth, canvasHeight);
         renderer.shadowMap.enabled = true;
         container.appendChild(renderer.domElement);
 
@@ -147,7 +157,7 @@
         const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x81c784 });
         const plane = new THREE.Mesh(planeGeometry, planeMaterial);
         plane.rotation.x = -Math.PI / 2;
-        plane.position.x = 100; // Зсуваємо, щоб координата 0 була скраю
+        plane.position.x = 100;
         plane.receiveShadow = true;
         scene.add(plane);
 
@@ -259,14 +269,13 @@
 
         // Камери
         function setCameraView(view) {
-            const lookAtTarget = new THREE.Vector3(50, h/2, 0);
             switch(view) {
                 case 'side': // Вигляд збоку (вздовж осі Z)
                     camera.position.set(50, Math.max(h, 40), 120);
                     controls.target.set(50, h/2, 0);
                     break;
                 case 'top': // Вигляд зверху (вздовж осі Y)
-                    camera.position.set(50, Math.max(h * 2, 150), 0.1); // 0.1 для уникнення Gimbal lock
+                    camera.position.set(50, Math.max(h * 2, 150), 0.1);
                     controls.target.set(50, 0, 0);
                     break;
                 case 'front': // Вигляд спереду (вздовж осі X, кулька летить на нас)
@@ -294,9 +303,11 @@
 
         window.addEventListener('resize', onWindowResize, false);
         function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            camera.aspect = w / h;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setSize(w, h);
         }
 
         // --- Основний цикл анімації ---
