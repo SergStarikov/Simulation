@@ -64,6 +64,12 @@
             </button>
         </div>
 
+        <div class="mb-6">
+            <button id="btn-vectors" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition text-sm">
+                Сховати вектори швидкості
+            </button>
+        </div>
+
         <h2 class="text-md font-bold mb-2 text-gray-800">Камера (Ракурс)</h2>
         <div class="grid grid-cols-2 gap-2">
             <button id="cam-side" class="bg-blue-100 hover:bg-blue-200 text-blue-800 py-1 px-2 rounded text-sm transition border border-blue-300">
@@ -117,6 +123,7 @@
 
         const btnStart = document.getElementById('btn-start');
         const btnReset = document.getElementById('btn-reset');
+        const btnVectors = document.getElementById('btn-vectors');
 
         // --- Налаштування Three.js ---
         const container = document.getElementById('canvas-container');
@@ -201,7 +208,7 @@
         scene.add(trajectoryLine);
         let pointCount = 0;
 
-        // Вектор швидкості (стрілка)
+        // Вектор швидкості (загальний)
         const arrowHelper = new THREE.ArrowHelper(
             new THREE.Vector3(1, 0, 0), // напрямок
             sphere.position,            // початок
@@ -209,6 +216,26 @@
             0xff9800                    // колір
         );
         scene.add(arrowHelper);
+
+        // Горизонтальна складова (vx)
+        const arrowVx = new THREE.ArrowHelper(
+            new THREE.Vector3(1, 0, 0),
+            sphere.position,
+            v0,
+            0x2196f3 // синій
+        );
+        scene.add(arrowVx);
+
+        // Вертикальна складова (vy)
+        const arrowVy = new THREE.ArrowHelper(
+            new THREE.Vector3(0, -1, 0),
+            sphere.position,
+            0.001, // початкова довжина майже 0
+            0xf44336 // червоний
+        );
+        scene.add(arrowVy);
+
+        let showVectors = true;
 
 
         // --- Функції логіки ---
@@ -231,10 +258,17 @@
             tower.geometry = new THREE.CylinderGeometry(2, 2, h, 16);
             tower.position.y = h / 2;
 
-            // Оновлення кульки та стрілки
+            // Оновлення кульки та стрілок
             sphere.position.set(0, h, 0);
             arrowHelper.position.copy(sphere.position);
-            arrowHelper.setLength(v0 || 0.1); // Щоб стрілка не зникала при v=0
+            arrowHelper.setDirection(new THREE.Vector3(1, 0, 0));
+            arrowHelper.setLength(v0 || 0.1); 
+
+            arrowVx.position.copy(sphere.position);
+            arrowVx.setLength(v0 || 0.1);
+
+            arrowVy.position.copy(sphere.position);
+            arrowVy.setLength(0.001);
 
             // Очищення траєкторії
             pointCount = 0;
@@ -296,6 +330,25 @@
         btnStart.addEventListener('click', toggleSimulation);
         btnReset.addEventListener('click', resetSimulation);
 
+        btnVectors.addEventListener('click', () => {
+            showVectors = !showVectors;
+            arrowHelper.visible = showVectors;
+            arrowVx.visible = showVectors;
+            arrowVy.visible = showVectors;
+            
+            if (showVectors) {
+                btnVectors.innerText = "Сховати вектори швидкості";
+                btnVectors.classList.replace('bg-indigo-300', 'bg-indigo-500');
+                btnVectors.classList.replace('hover:bg-indigo-400', 'hover:bg-indigo-600');
+                btnVectors.classList.replace('text-gray-800', 'text-white');
+            } else {
+                btnVectors.innerText = "Показати вектори швидкості";
+                btnVectors.classList.replace('bg-indigo-500', 'bg-indigo-300');
+                btnVectors.classList.replace('hover:bg-indigo-600', 'hover:bg-indigo-400');
+                btnVectors.classList.replace('text-white', 'text-gray-800');
+            }
+        });
+
         document.getElementById('cam-side').addEventListener('click', () => setCameraView('side'));
         document.getElementById('cam-top').addEventListener('click', () => setCameraView('top'));
         document.getElementById('cam-front').addEventListener('click', () => setCameraView('front'));
@@ -339,13 +392,30 @@
                 // Оновлення позиції
                 sphere.position.set(currentX, currentY, 0);
 
-                // Оновлення стрілки швидкості (векторна сума vx і vy)
+                // Оновлення стрілок швидкості
                 let vy = -g * time; // швидкість по Y
                 let v_total = new THREE.Vector3(v0, vy, 0);
+                
                 arrowHelper.position.copy(sphere.position);
+                arrowVx.position.copy(sphere.position);
+                arrowVy.position.copy(sphere.position);
+
                 if (v_total.length() > 0) {
                     arrowHelper.setDirection(v_total.normalize());
                     arrowHelper.setLength(v_total.length() * 0.5); // Масштабування для видимості
+                }
+
+                if (v0 > 0) {
+                    arrowVx.setLength(v0 * 0.5);
+                } else {
+                    arrowVx.setLength(0.001);
+                }
+
+                if (Math.abs(vy) > 0) {
+                    arrowVy.setDirection(new THREE.Vector3(0, -1, 0));
+                    arrowVy.setLength(Math.abs(vy) * 0.5);
+                } else {
+                    arrowVy.setLength(0.001);
                 }
 
                 // Малювання траєкторії
