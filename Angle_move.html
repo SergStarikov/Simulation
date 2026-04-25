@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Рух тіла, кинутого під кутом до горизонту</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; height: 100vh; }
+        .control-panel {
+            width: 340px;
+            min-width: 340px;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            z-index: 10;
+        }
+        #canvas-container {
+            flex: 1;
+            height: 100vh;
+            position: relative;
+        }
+        .info-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(30, 41, 59, 0.9);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 1.1em;
+            z-index: 5;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="control-panel">
+        <h1 class="text-xl font-bold mb-4 text-blue-800">Рух під кутом</h1>
+        <p class="text-sm text-gray-600 mb-4">Тіло кинуте під кутом <span class="font-bold font-serif italic text-base">α</span> до горизонту з висоти <span class="font-bold font-serif italic text-base">h</span> з початковою швидкістю <span class="font-bold font-serif italic text-base">v</span><sub class="font-bold font-serif text-xs">0</sub>.</p>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Висота, <span class="font-serif italic text-base">h</span> (м): <span id="h-val">0</span></label>
+            <input type="range" id="height-slider" min="0" max="100" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Початкова швидкість, <span class="font-serif italic text-base">v</span><sub class="font-serif text-xs">0</sub> (м/с): <span id="v0-val">25</span></label>
+            <input type="range" id="velocity-slider" min="0" max="40" value="25" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Кут, <span class="font-serif italic text-base">α</span> (°): <span id="angle-val">45</span></label>
+            <input type="range" id="angle-slider" min="0" max="90" value="45" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+        </div>
+
+        <div class="flex space-x-2 mb-6">
+            <button id="btn-start" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition">
+                Запуск
+            </button>
+            <button id="btn-reset" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition">
+                Скинути
+            </button>
+        </div>
+
+        <div class="mb-6">
+            <button id="btn-vectors" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded transition text-sm">
+                Сховати вектори швидкості
+            </button>
+        </div>
+
+        <h2 class="text-md font-bold mb-2 text-gray-800">Камера (Ракурс)</h2>
+        <div class="grid grid-cols-2 gap-2">
+            <button id="cam-side" class="bg-blue-100 hover:bg-blue-200 text-blue-800 py-1 px-2 rounded text-sm transition border border-blue-300">
+                Збоку (Парабола)
+            </button>
+            <button id="cam-top" class="bg-blue-100 hover:bg-blue-200 text-blue-800 py-1 px-2 rounded text-sm transition border border-blue-300">
+                Зверху (Ось Х)
+            </button>
+            <button id="cam-front" class="bg-blue-100 hover:bg-blue-200 text-blue-800 py-1 px-2 rounded text-sm transition border border-blue-300">
+                Спереду (Ось Y)
+            </button>
+            <button id="cam-free" class="bg-purple-100 hover:bg-purple-200 text-purple-800 py-1 px-2 rounded text-sm transition border border-purple-300">
+                Вільна (3D)
+            </button>
+        </div>
+        <p class="text-xs text-gray-500 mt-2 italic">* Ви можете обертати сцену мишкою у вільному режимі.</p>
+    </div>
+
+    <!-- Canvas container is now to the right of the panel -->
+    <div id="canvas-container">
+        <div class="info-panel">
+            <div>Час (<span class="font-serif italic">t</span>): <span id="info-t">0.00</span> с</div>
+            <div>Дальність (<span class="font-serif italic">x</span>): <span id="info-x">0.00</span> м</div>
+            <div>Висота (<span class="font-serif italic">y</span>): <span id="info-y">0.00</span> м</div>
+        </div>
+    </div>
+
+    <!-- Three.js Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- Налаштування фізики ---
+        const g = 9.81; // Прискорення вільного падіння
+        let h = 0;      // Початкова висота
+        let v0 = 25;    // Початкова швидкість
+        let angle = 45; // Кут в градусах
+        
+        let time = 0;
+        let isRunning = false;
+        let animationId;
+
+        // UI Елементи
+        const hSlider = document.getElementById('height-slider');
+        const vSlider = document.getElementById('velocity-slider');
+        const aSlider = document.getElementById('angle-slider');
+        const hVal = document.getElementById('h-val');
+        const vVal = document.getElementById('v0-val');
+        const aVal = document.getElementById('angle-val');
+        
+        const infoT = document.getElementById('info-t');
+        const infoX = document.getElementById('info-x');
+        const infoY = document.getElementById('info-y');
+
+        const btnStart = document.getElementById('btn-start');
+        const btnReset = document.getElementById('btn-reset');
+        const btnVectors = document.getElementById('btn-vectors');
+
+        // --- Налаштування Three.js ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xe0f7fa); // Світло-блакитне небо
+
+        // Використовуємо розміри контейнера замість вікна
+        const canvasWidth = container.clientWidth;
+        const canvasHeight = container.clientHeight;
+
+        const camera = new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 0.1, 1000);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(canvasWidth, canvasHeight);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // --- Світло ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(50, 150, 50);
+        dirLight.castShadow = true;
+        dirLight.shadow.camera.top = 100;
+        dirLight.shadow.camera.bottom = -100;
+        dirLight.shadow.camera.left = -100;
+        dirLight.shadow.camera.right = 100;
+        scene.add(dirLight);
+
+        // --- Об'єкти сцени ---
+
+        // Земля
+        const planeGeometry = new THREE.PlaneGeometry(300, 100);
+        const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x81c784 });
+        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.rotation.x = -Math.PI / 2;
+        plane.position.x = 100;
+        plane.receiveShadow = true;
+        scene.add(plane);
+
+        // Сітка для кращої орієнтації
+        const gridHelper = new THREE.GridHelper(300, 30, 0x000000, 0x000000);
+        gridHelper.position.x = 100;
+        gridHelper.position.y = 0.1;
+        gridHelper.material.opacity = 0.2;
+        gridHelper.material.transparent = true;
+        scene.add(gridHelper);
+
+        // Вісі координат (X - червона, Y - зелена, Z - синя)
+        const axesHelper = new THREE.AxesHelper(20);
+        axesHelper.position.y = 0.2;
+        scene.add(axesHelper);
+
+        // Вежа (з якої кидають)
+        const towerGeometry = new THREE.CylinderGeometry(2, 2, 1, 16);
+        const towerMaterial = new THREE.MeshStandardMaterial({ color: 0x757575 });
+        const tower = new THREE.Mesh(towerGeometry, towerMaterial);
+        tower.position.set(0, 0.5, 0);
+        tower.castShadow = true;
+        tower.receiveShadow = true;
+        scene.add(tower);
+
+        // Тіло (Кулька)
+        const sphereGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+        const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0xe53935 });
+        const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        sphere.position.set(0, h, 0);
+        sphere.castShadow = true;
+        scene.add(sphere);
+
+        // Траєкторія
+        const maxPoints = 500;
+        const trajectoryGeometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(maxPoints * 3); // 3 вершини на точку
+        trajectoryGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const trajectoryMaterial = new THREE.LineBasicMaterial({ color: 0x1e88e5, linewidth: 2 });
+        const trajectoryLine = new THREE.Line(trajectoryGeometry, trajectoryMaterial);
+        scene.add(trajectoryLine);
+        let pointCount = 0;
+
+        // Вектор швидкості (загальний)
+        const arrowHelper = new THREE.ArrowHelper(
+            new THREE.Vector3(1, 0, 0), // напрямок
+            sphere.position,            // початок
+            v0,                         // довжина
+            0xff9800                    // колір
+        );
+        scene.add(arrowHelper);
+
+        // Горизонтальна складова (vx)
+        const arrowVx = new THREE.ArrowHelper(
+            new THREE.Vector3(1, 0, 0),
+            sphere.position,
+            v0,
+            0x2196f3 // синій
+        );
+        scene.add(arrowVx);
+
+        // Вертикальна складова (vy)
+        const arrowVy = new THREE.ArrowHelper(
+            new THREE.Vector3(0, 1, 0),
+            sphere.position,
+            0.001, // початкова довжина майже 0
+            0xf44336 // червоний
+        );
+        scene.add(arrowVy);
+
+        let showVectors = true;
+
+
+        // --- Функції логіки ---
+
+        function updateInitialState() {
+            if (isRunning) return; // Не міняємо під час польоту
+
+            h = parseFloat(hSlider.value);
+            v0 = parseFloat(vSlider.value);
+            angle = parseFloat(aSlider.value);
+
+            hVal.innerText = h;
+            vVal.innerText = v0;
+            aVal.innerText = angle;
+            
+            infoY.innerText = h.toFixed(2);
+            infoX.innerText = "0.00";
+            infoT.innerText = "0.00";
+
+            // Оновлення вежі
+            tower.geometry.dispose();
+            const towerHeight = Math.max(h, 0.1);
+            tower.geometry = new THREE.CylinderGeometry(2, 2, towerHeight, 16);
+            tower.position.y = towerHeight / 2;
+            tower.visible = h > 0;
+
+            // Розрахунок початкових швидкостей
+            const rad = angle * Math.PI / 180;
+            const v0x = v0 * Math.cos(rad);
+            const v0y = v0 * Math.sin(rad);
+
+            // Оновлення кульки та стрілок
+            sphere.position.set(0, h, 0);
+            
+            arrowHelper.position.copy(sphere.position);
+            if (v0 > 0) {
+                arrowHelper.setDirection(new THREE.Vector3(v0x, v0y, 0).normalize());
+                arrowHelper.setLength(v0 * 0.5); 
+            } else {
+                arrowHelper.setLength(0.001);
+            }
+
+            arrowVx.position.copy(sphere.position);
+            if (v0x > 0) {
+                arrowVx.setLength(v0x * 0.5);
+            } else {
+                arrowVx.setLength(0.001);
+            }
+
+            arrowVy.position.copy(sphere.position);
+            if (v0y > 0) {
+                arrowVy.setDirection(new THREE.Vector3(0, 1, 0));
+                arrowVy.setLength(v0y * 0.5);
+            } else {
+                arrowVy.setLength(0.001);
+            }
+
+            // Очищення траєкторії
+            pointCount = 0;
+            trajectoryGeometry.setDrawRange(0, pointCount);
+        }
+
+        function resetSimulation() {
+            isRunning = false;
+            time = 0;
+            btnStart.innerText = "Запуск";
+            btnStart.classList.replace('bg-yellow-500', 'bg-green-600');
+            btnStart.classList.replace('hover:bg-yellow-600', 'hover:bg-green-700');
+            updateInitialState();
+        }
+
+        function toggleSimulation() {
+            if (sphere.position.y <= 0 && !isRunning) {
+                resetSimulation(); // Якщо вже впало, починаємо спочатку
+            }
+            
+            isRunning = !isRunning;
+            if (isRunning) {
+                btnStart.innerText = "Пауза";
+                btnStart.classList.replace('bg-green-600', 'bg-yellow-500');
+                btnStart.classList.replace('hover:bg-green-700', 'hover:bg-yellow-600');
+            } else {
+                btnStart.innerText = "Продовжити";
+                btnStart.classList.replace('bg-yellow-500', 'bg-green-600');
+                btnStart.classList.replace('hover:bg-yellow-600', 'hover:bg-green-700');
+            }
+        }
+
+        // Камери
+        function setCameraView(view) {
+            const rad = angle * Math.PI / 180;
+            const h_max = h + Math.pow(v0 * Math.sin(rad), 2) / (2 * g);
+            const x_max = v0 * Math.cos(rad) * (v0 * Math.sin(rad) + Math.sqrt(Math.pow(v0 * Math.sin(rad), 2) + 2 * g * h)) / g;
+            const centerX = Math.max(x_max / 2, 50);
+            const camHeight = Math.max(h_max, 40);
+
+            switch(view) {
+                case 'side': // Вигляд збоку (вздовж осі Z)
+                    camera.position.set(centerX, camHeight, 120);
+                    controls.target.set(centerX, camHeight / 2, 0);
+                    break;
+                case 'top': // Вигляд зверху (вздовж осі Y)
+                    camera.position.set(centerX, Math.max(camHeight * 2, 150), 0.1);
+                    controls.target.set(centerX, 0, 0);
+                    break;
+                case 'front': // Вигляд спереду (вздовж осі X, кулька летить на нас)
+                    camera.position.set(centerX + 100, camHeight / 2, 0);
+                    controls.target.set(centerX, camHeight / 2, 0);
+                    break;
+                case 'free':
+                    camera.position.set(-30, camHeight + 30, 80);
+                    controls.target.set(centerX, camHeight / 2, 0);
+                    break;
+            }
+            controls.update();
+        }
+
+        // --- Обробники подій ---
+        hSlider.addEventListener('input', updateInitialState);
+        vSlider.addEventListener('input', updateInitialState);
+        aSlider.addEventListener('input', updateInitialState);
+        btnStart.addEventListener('click', toggleSimulation);
+        btnReset.addEventListener('click', resetSimulation);
+
+        btnVectors.addEventListener('click', () => {
+            showVectors = !showVectors;
+            arrowHelper.visible = showVectors;
+            arrowVx.visible = showVectors;
+            arrowVy.visible = showVectors;
+            
+            if (showVectors) {
+                btnVectors.innerText = "Сховати вектори швидкості";
+                btnVectors.classList.replace('bg-indigo-300', 'bg-indigo-500');
+                btnVectors.classList.replace('hover:bg-indigo-400', 'hover:bg-indigo-600');
+                btnVectors.classList.replace('text-gray-800', 'text-white');
+            } else {
+                btnVectors.innerText = "Показати вектори швидкості";
+                btnVectors.classList.replace('bg-indigo-500', 'bg-indigo-300');
+                btnVectors.classList.replace('hover:bg-indigo-600', 'hover:bg-indigo-400');
+                btnVectors.classList.replace('text-white', 'text-gray-800');
+            }
+        });
+
+        document.getElementById('cam-side').addEventListener('click', () => setCameraView('side'));
+        document.getElementById('cam-top').addEventListener('click', () => setCameraView('top'));
+        document.getElementById('cam-front').addEventListener('click', () => setCameraView('front'));
+        document.getElementById('cam-free').addEventListener('click', () => setCameraView('free'));
+
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+        }
+
+        // --- Основний цикл анімації ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (isRunning) {
+                // Крок часу (уповільнено для кращого сприйняття)
+                const dt = 0.03; 
+                time += dt;
+
+                const rad = angle * Math.PI / 180;
+                const v0x = v0 * Math.cos(rad);
+                const v0y = v0 * Math.sin(rad);
+
+                // Рівняння руху
+                // X = v0x * t
+                let currentX = v0x * time;
+                
+                // Y = h + v0y * t - (g * t^2) / 2
+                let currentY = h + v0y * time - (g * time * time) / 2;
+
+                // Перевірка удару об землю
+                if (currentY <= 0) {
+                    currentY = 0;
+                    isRunning = false;
+                    btnStart.innerText = "Завершено";
+                    // t = (v0y + sqrt(v0y^2 + 2gh)) / g
+                    time = (v0y + Math.sqrt(v0y * v0y + 2 * g * h)) / g;
+                    currentX = v0x * time; // Точна дальність
+                }
+
+                // Оновлення позиції
+                sphere.position.set(currentX, currentY, 0);
+
+                // Оновлення стрілок швидкості
+                let vy = v0y - g * time; // швидкість по Y
+                let v_total = new THREE.Vector3(v0x, vy, 0);
+                
+                arrowHelper.position.copy(sphere.position);
+                arrowVx.position.copy(sphere.position);
+                arrowVy.position.copy(sphere.position);
+
+                if (v_total.length() > 0) {
+                    arrowHelper.setDirection(v_total.normalize());
+                    arrowHelper.setLength(v_total.length() * 0.5); // Масштабування для видимості
+                }
+
+                if (v0x > 0) {
+                    arrowVx.setLength(v0x * 0.5);
+                } else {
+                    arrowVx.setLength(0.001);
+                }
+
+                if (Math.abs(vy) > 0) {
+                    arrowVy.setDirection(new THREE.Vector3(0, vy > 0 ? 1 : -1, 0));
+                    arrowVy.setLength(Math.abs(vy) * 0.5);
+                } else {
+                    arrowVy.setLength(0.001);
+                }
+
+                // Малювання траєкторії
+                if (pointCount < maxPoints) {
+                    const positions = trajectoryLine.geometry.attributes.position.array;
+                    positions[pointCount * 3] = currentX;
+                    positions[pointCount * 3 + 1] = currentY;
+                    positions[pointCount * 3 + 2] = 0;
+                    pointCount++;
+                    trajectoryLine.geometry.setDrawRange(0, pointCount);
+                    trajectoryLine.geometry.attributes.position.needsUpdate = true;
+                }
+
+                // Оновлення тексту
+                infoT.innerText = time.toFixed(2);
+                infoX.innerText = currentX.toFixed(2);
+                infoY.innerText = currentY.toFixed(2);
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Ініціалізація камери та запуск
+        window.onload = function() {
+            updateInitialState();
+            setCameraView('free');
+            animate();
+        };
+
+    </script>
+</body>
+</html>
