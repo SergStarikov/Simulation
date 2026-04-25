@@ -43,15 +43,15 @@
 
     <div class="control-panel">
         <h1 class="text-xl font-bold mb-4 text-blue-800">Рух кинутого тіла</h1>
-        <p class="text-sm text-gray-600 mb-4">Тіло кинуте горизонтально з висоти <span class="font-bold font-serif">h</span> з початковою швидкістю <span class="font-bold font-serif">v₀</span>.</p>
+        <p class="text-sm text-gray-600 mb-4">Тіло кинуте горизонтально з висоти <span class="font-bold font-serif italic text-base">h</span> з початковою швидкістю <span class="font-bold font-serif italic text-base">v</span><sub class="font-bold font-serif text-xs">0</sub>.</p>
 
         <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700">Висота, h (м): <span id="h-val">50</span></label>
+            <label class="block text-sm font-medium text-gray-700">Висота, <span class="font-serif italic text-base">h</span> (м): <span id="h-val">50</span></label>
             <input type="range" id="height-slider" min="10" max="100" value="50" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
         </div>
 
         <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700">Початкова швидкість, v₀ (м/с): <span id="v0-val">15</span></label>
+            <label class="block text-sm font-medium text-gray-700">Початкова швидкість, <span class="font-serif italic text-base">v</span><sub class="font-serif text-xs">0</sub> (м/с): <span id="v0-val">15</span></label>
             <input type="range" id="velocity-slider" min="0" max="40" value="15" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
         </div>
 
@@ -85,9 +85,9 @@
     <!-- Canvas container is now to the right of the panel -->
     <div id="canvas-container">
         <div class="info-panel">
-            <div>Час (t): <span id="info-t">0.00</span> с</div>
-            <div>Дальність (x): <span id="info-x">0.00</span> м</div>
-            <div>Висота (y): <span id="info-y">50.00</span> м</div>
+            <div>Час (<span class="font-serif italic">t</span>): <span id="info-t">0.00</span> с</div>
+            <div>Дальність (<span class="font-serif italic">x</span>): <span id="info-x">0.00</span> м</div>
+            <div>Висота (<span class="font-serif italic">y</span>): <span id="info-y">50.00</span> м</div>
         </div>
     </div>
 
