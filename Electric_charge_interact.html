@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Взаємодія зарядів</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f8fafc;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        canvas {
+            display: block;
+            cursor: grab;
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        /* Custom range slider styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #cbd5e1;
+            border-radius: 2px;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+    </style>
+</head>
+
+<body class="flex h-screen w-screen">
+
+    <!-- Canvas Container -->
+    <div class="flex-grow relative" id="canvas-container">
+        <!-- Grid background layer (drawn via CSS for performance) -->
+        <div class="absolute inset-0"
+            style="background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 40px 40px; opacity: 0.5;">
+        </div>
+        <canvas id="simCanvas" class="absolute inset-0 z-10"></canvas>
+
+        <!-- overlay info -->
+        <div
+            class="absolute top-4 left-4 z-20 bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-slate-200 pointer-events-none">
+            <h1 class="text-xl font-bold text-slate-800">Електричне поле та сили Кулона</h1>
+            <p class="text-sm text-slate-600 mt-1">Перетягуйте заряди для дослідження взаємодії</p>
+        </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="w-80 bg-white border-l border-slate-200 shadow-xl flex flex-col z-20 h-full overflow-y-auto">
+        <div class="p-6 border-b border-slate-100 bg-slate-50">
+            <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="text-blue-500">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+                Параметри системи
+            </h2>
+        </div>
+
+        <div class="p-6 flex flex-col gap-8">
+            <!-- Charge 1 Controls -->
+            <div class="bg-red-50/50 p-4 rounded-xl border border-red-100">
+                <div class="flex justify-between items-center mb-4">
+                    <label class="font-medium text-slate-700 flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                        Заряд q₁
+                    </label>
+                    <span id="q1-val" class="text-red-600 font-bold bg-red-100 px-2 py-1 rounded-md text-sm">+5
+                        мкКл</span>
+                </div>
+                <input type="range" id="q1-slider" min="-10" max="10" value="5" step="1">
+                <div class="flex justify-between text-xs text-slate-400 mt-1">
+                    <span>-10</span><span>0</span><span>+10</span>
+                </div>
+            </div>
+
+            <!-- Charge 2 Controls -->
+            <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                <div class="flex justify-between items-center mb-4">
+                    <label class="font-medium text-slate-700 flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                        Заряд q₂
+                    </label>
+                    <span id="q2-val" class="text-blue-600 font-bold bg-blue-100 px-2 py-1 rounded-md text-sm">-5
+                        мкКл</span>
+                </div>
+                <input type="range" id="q2-slider" min="-10" max="10" value="-5" step="1">
+                <div class="flex justify-between text-xs text-slate-400 mt-1">
+                    <span>-10</span><span>0</span><span>+10</span>
+                </div>
+            </div>
+
+            <hr class="border-slate-100">
+
+            <!-- Visualization Toggles -->
+            <div class="flex flex-col gap-4">
+                <h3 class="font-medium text-slate-700 text-sm uppercase tracking-wider">Відображення</h3>
+
+                <label class="flex items-center cursor-pointer group">
+                    <div class="relative">
+                        <input type="checkbox" id="show-forces" class="sr-only" checked>
+                        <div
+                            class="block bg-slate-200 w-10 h-6 rounded-full transition-colors group-hover:bg-slate-300">
+                        </div>
+                        <div
+                            class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform translate-x-4 shadow">
+                        </div>
+                    </div>
+                    <div class="ml-3 text-slate-700 text-sm font-medium">Вектори сили Кулона</div>
+                </label>
+
+                <label class="flex items-center cursor-pointer group">
+                    <div class="relative">
+                        <input type="checkbox" id="show-fields" class="sr-only" checked>
+                        <div
+                            class="block bg-slate-200 w-10 h-6 rounded-full transition-colors group-hover:bg-slate-300">
+                        </div>
+                        <div
+                            class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform translate-x-4 shadow">
+                        </div>
+                    </div>
+                    <div class="ml-3 text-slate-700 text-sm font-medium">Лінії електричного поля</div>
+                </label>
+            </div>
+
+            <div class="mt-auto pt-4">
+                <div class="bg-slate-100 p-3 rounded-lg text-xs text-slate-600 border border-slate-200">
+                    <strong>Довідка:</strong> Силові лінії вказують напрямок сили, яка діяла б на позитивний пробний
+                    заряд, поміщений у дану точку простору.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false }); // Optimize
+        const container = document.getElementById('canvas-container');
+
+        // UI Elements
+        const q1Slider = document.getElementById('q1-slider');
+        const q2Slider = document.getElementById('q2-slider');
+        const q1Val = document.getElementById('q1-val');
+        const q2Val = document.getElementById('q2-val');
+        const showForcesToggle = document.getElementById('show-forces');
+        const showFieldsToggle = document.getElementById('show-fields');
+
+        // Checkbox styling logic
+        function updateToggleStyle(checkbox) {
+            const track = checkbox.nextElementSibling;
+            const dot = track.nextElementSibling;
+            if (checkbox.checked) {
+                track.classList.replace('bg-slate-200', 'bg-blue-500');
+                track.classList.replace('group-hover:bg-slate-300', 'group-hover:bg-blue-600');
+                dot.classList.add('translate-x-4');
+            } else {
+                track.classList.replace('bg-blue-500', 'bg-slate-200');
+                track.classList.replace('group-hover:bg-blue-600', 'group-hover:bg-slate-300');
+                dot.classList.remove('translate-x-4');
+            }
+        }
+
+        [showForcesToggle, showFieldsToggle].forEach(toggle => {
+            toggle.addEventListener('change', (e) => {
+                updateToggleStyle(e.target);
+                requestDraw();
+            });
+            // Initial styling setup
+            updateToggleStyle(toggle);
+        });
+
+        // Physics State
+        let charges = [
+            { x: 0, y: 0, q: 5, radius: 25, color: '#ef4444', hover: false },
+            { x: 0, y: 0, q: -5, radius: 25, color: '#3b82f6', hover: false }
+        ];
+
+        let isDragging = false;
+        let dragIndex = -1;
+        let drawPending = false;
+
+        // Colors
+        const COLOR_POS = '#ef4444'; // Red
+        const COLOR_NEG = '#3b82f6'; // Blue
+        const COLOR_NEUTRAL = '#94a3b8'; // Slate
+
+        const BG_COLOR = '#f8fafc'; // Matches body
+
+        // Resize handler
+        function resize() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+
+            // Center charges initially if they are at 0,0
+            if (charges[0].x === 0 && charges[0].y === 0) {
+                charges[0].x = canvas.width / 2 - 150;
+                charges[0].y = canvas.height / 2;
+                charges[1].x = canvas.width / 2 + 150;
+                charges[1].y = canvas.height / 2;
+            }
+            requestDraw();
+        }
+
+        window.addEventListener('resize', resize);
+
+        // Update values from sliders
+        function updateChargeValues() {
+            charges[0].q = parseInt(q1Slider.value);
+            charges[1].q = parseInt(q2Slider.value);
+
+            const formatVal = (q) => (q > 0 ? '+' : '') + q + ' мкКл';
+
+            q1Val.innerText = formatVal(charges[0].q);
+            q2Val.innerText = formatVal(charges[1].q);
+
+            // Update colors based on charge
+            charges.forEach(charge => {
+                if (charge.q > 0) charge.color = COLOR_POS;
+                else if (charge.q < 0) charge.color = COLOR_NEG;
+                else charge.color = COLOR_NEUTRAL;
+            });
+
+            // Update UI badge colors
+            updateBadgeStyle(q1Val, charges[0].q);
+            updateBadgeStyle(q2Val, charges[1].q);
+
+            requestDraw();
+        }
+
+        function updateBadgeStyle(element, q) {
+            element.className = `font-bold px-2 py-1 rounded-md text-sm ${q > 0 ? 'text-red-600 bg-red-100' :
+                q < 0 ? 'text-blue-600 bg-blue-100' :
+                    'text-slate-600 bg-slate-200'
+                }`;
+        }
+
+        q1Slider.addEventListener('input', updateChargeValues);
+        q2Slider.addEventListener('input', updateChargeValues);
+
+        // Mouse Events
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: evt.clientX - rect.left,
+                y: evt.clientY - rect.top
+            };
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const pos = getMousePos(e);
+            for (let i = 0; i < charges.length; i++) {
+                const dx = pos.x - charges[i].x;
+                const dy = pos.y - charges[i].y;
+                if (dx * dx + dy * dy <= charges[i].radius * charges[i].radius * 1.5) { // 1.5 multiplier for easier grabbing
+                    isDragging = true;
+                    dragIndex = i;
+                    break;
+                }
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const pos = getMousePos(e);
+            let hovering = false;
+
+            // Check hover state for cursor change
+            for (let i = 0; i < charges.length; i++) {
+                const dx = pos.x - charges[i].x;
+                const dy = pos.y - charges[i].y;
+                charges[i].hover = (dx * dx + dy * dy <= charges[i].radius * charges[i].radius * 1.5);
+                if (charges[i].hover) hovering = true;
+            }
+
+            canvas.style.cursor = isDragging ? 'grabbing' : (hovering ? 'grab' : 'default');
+
+            if (isDragging && dragIndex !== -1) {
+                // Bounds checking
+                let newX = pos.x;
+                let newY = pos.y;
+                const r = charges[dragIndex].radius;
+
+                if (newX < r) newX = r;
+                if (newX > canvas.width - r) newX = canvas.width - r;
+                if (newY < r) newY = r;
+                if (newY > canvas.height - r) newY = canvas.height - r;
+
+                charges[dragIndex].x = newX;
+                charges[dragIndex].y = newY;
+                requestDraw();
+            } else if (hovering) {
+                // Just redraw to show hover effect if needed
+                requestDraw();
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+            dragIndex = -1;
+            canvas.style.cursor = 'default';
+        });
+
+        // Request Animation Frame wrapper for performance
+        function requestDraw() {
+            if (!drawPending) {
+                drawPending = true;
+                requestAnimationFrame(draw);
+            }
+        }
+
+        // --- Physics Calculations ---
+
+        // Calculate Electric Field vector at a specific point
+        function getEField(x, y) {
+            let Ex = 0;
+            let Ey = 0;
+            const k = 10000; // Scaling factor for visual field
+
+            for (let charge of charges) {
+                if (charge.q === 0) continue;
+
+                const dx = x - charge.x;
+                const dy = y - charge.y;
+                const r2 = dx * dx + dy * dy;
+
+                // Prevent infinite field at center of charge
+                if (r2 < 100) continue;
+
+                const r = Math.sqrt(r2);
+                const E_mag = (k * charge.q) / r2;
+
+                Ex += E_mag * (dx / r);
+                Ey += E_mag * (dy / r);
+            }
+            return { x: Ex, y: Ey };
+        }
+
+        // --- Drawing Functions ---
+
+        function drawArrow(ctx, fromX, fromY, toX, toY, color, width) {
+            const headlen = Math.max(10, width * 3);
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round';
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.fillStyle = color;
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.fill();
+        }
+
+        function drawFieldLines() {
+            if (!showFieldsToggle.checked) return;
+
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)'; // slate-400 with opacity
+            ctx.lineCap = 'round';
+
+            const numLines = 16; // Lines per charge
+            const stepSize = 4;
+            const maxSteps = 800;
+
+            for (let c of charges) {
+                if (c.q === 0) continue;
+
+                // Only start drawing lines from positive charges, OR from negative if no positive exists
+                const hasPositive = charges.some(ch => ch.q > 0);
+                if (c.q < 0 && hasPositive) continue;
+
+                // Determine direction to step. + steps with E, - steps against E.
+                const sign = c.q > 0 ? 1 : -1;
+
+                for (let i = 0; i < numLines; i++) {
+                    const angle = (i * 2 * Math.PI) / numLines;
+
+                    // Start slightly outside the charge radius
+                    let x = c.x + Math.cos(angle) * (c.radius + 5);
+                    let y = c.y + Math.sin(angle) * (c.radius + 5);
+
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+
+                    let steps = 0;
+                    let drawArrowAt = Math.floor(Math.random() * 50) + 50; // Randomize arrow position a bit
+
+                    while (steps < maxSteps) {
+                        // Check bounds
+                        if (x < 0 || x > canvas.width || y < 0 || y > canvas.height) break;
+
+                        // Check if close to ANY charge (sink)
+                        let hitCharge = false;
+                        for (let otherC of charges) {
+                            if (otherC === c && steps < 10) continue; // Don't hit self immediately
+                            const distSq = (x - otherC.x) ** 2 + (y - otherC.y) ** 2;
+                            if (distSq < otherC.radius ** 2) {
+                                hitCharge = true;
+                                break;
+                            }
+                        }
+                        if (hitCharge) break;
+
+                        const E = getEField(x, y);
+                        const Emag = Math.sqrt(E.x ** 2 + E.y ** 2);
+
+                        if (Emag < 0.0001) break; // Field is essentially zero, stop.
+
+                        // Normalize and step
+                        const dx = (E.x / Emag) * stepSize * sign;
+                        const dy = (E.y / Emag) * stepSize * sign;
+
+                        x += dx;
+                        y += dy;
+                        ctx.lineTo(x, y);
+
+                        // Draw direction arrows on the lines
+                        if (steps === drawArrowAt && c.q !== 0) {
+                            ctx.stroke(); // Stroke path so far
+
+                            // Arrow direction depends on charge. 
+                            // Field always points away from +, towards -.
+                            const arrowAngle = Math.atan2(E.y, E.x);
+
+                            ctx.save();
+                            ctx.translate(x, y);
+                            ctx.rotate(arrowAngle);
+                            ctx.fillStyle = 'rgba(148, 163, 184, 0.8)';
+                            ctx.beginPath();
+                            ctx.moveTo(0, 0);
+                            ctx.lineTo(-6, -4);
+                            ctx.lineTo(-6, 4);
+                            ctx.fill();
+                            ctx.restore();
+
+                            ctx.beginPath(); // Start new path
+                            ctx.moveTo(x, y);
+                            drawArrowAt += 150; // Next arrow further down
+                        }
+
+                        steps++;
+                    }
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function drawForces() {
+            if (!showForcesToggle.checked) return;
+            if (charges[0].q === 0 || charges[1].q === 0) return;
+
+            const dx = charges[1].x - charges[0].x;
+            const dy = charges[1].y - charges[0].y;
+            const distSq = dx * dx + dy * dy;
+            const dist = Math.sqrt(distSq);
+
+            if (dist < 10) return; // Prevent infinity
+
+            // Coulomb's law F = k * (q1 * q2) / r^2
+            // Scaling for visual representation
+            const k_vis = 200000;
+            const forceMag = Math.abs(k_vis * (charges[0].q * charges[1].q) / distSq);
+
+            // Limit force visualization size
+            const visLength = Math.min(Math.max(forceMag, 20), 200);
+            // Width of the arrow based on force magnitude
+            const lineWidth = Math.min(Math.max(forceMag / 20, 2), 8);
+
+            // Determine if force is attractive or repulsive
+            const isAttractive = (charges[0].q * charges[1].q) < 0;
+
+            // Unit vector from 0 to 1
+            const ux = dx / dist;
+            const uy = dy / dist;
+
+            // Force on charge 0
+            const dir0 = isAttractive ? 1 : -1;
+            const F0x = charges[0].x + ux * visLength * dir0;
+            const F0y = charges[0].y + uy * visLength * dir0;
+
+            // Force on charge 1
+            const dir1 = isAttractive ? -1 : 1;
+            const F1x = charges[1].x + ux * visLength * dir1;
+            const F1y = charges[1].y + uy * visLength * dir1;
+
+            const forceColor = '#10b981'; // Emerald color for force
+
+            // Draw force starting from edge of charge
+            drawArrow(ctx,
+                charges[0].x + ux * charges[0].radius * dir0,
+                charges[0].y + uy * charges[0].radius * dir0,
+                F0x, F0y, forceColor, lineWidth);
+
+            drawArrow(ctx,
+                charges[1].x + ux * charges[1].radius * dir1,
+                charges[1].y + uy * charges[1].radius * dir1,
+                F1x, F1y, forceColor, lineWidth);
+        }
+
+        function draw() {
+            drawPending = false;
+
+            // Clear canvas with background color
+            ctx.fillStyle = BG_COLOR;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw layers
+            drawFieldLines();
+            drawForces();
+
+            // Draw charges
+            for (let c of charges) {
+                // Glow effect based on charge magnitude
+                if (c.q !== 0) {
+                    const glowVal = Math.abs(c.q);
+                    const gradient = ctx.createRadialGradient(c.x, c.y, c.radius * 0.8, c.x, c.y, c.radius + 10 + glowVal * 1.5);
+
+                    let glowColor = c.q > 0 ? 'rgba(239, 68, 68, ' : 'rgba(59, 130, 246, ';
+                    gradient.addColorStop(0, glowColor + '0.4)');
+                    gradient.addColorStop(1, glowColor + '0)');
+
+                    ctx.beginPath();
+                    ctx.arc(c.x, c.y, c.radius + 10 + glowVal * 1.5, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                }
+
+                // Main circle
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+                ctx.fillStyle = c.color;
+                ctx.fill();
+
+                // Border for 3D-ish look
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+                ctx.stroke();
+
+                // Draw + or - symbol
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                if (c.q > 0) {
+                    ctx.fillText('+', c.x, c.y + 2); // Slight offset for visual center
+                } else if (c.q < 0) {
+                    ctx.fillText('-', c.x, c.y + 1);
+                }
+            }
+        }
+
+        // Init
+        resize();
+        updateChargeValues();
+
+    </script>
+</body>
+
+</html>
