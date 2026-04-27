@@ -150,6 +150,15 @@
                     </div>
                     <div class="ml-3 text-slate-700 text-sm font-medium">Лінії електричного поля</div>
                 </label>
+
+                <label class="flex items-center cursor-pointer group">
+                    <div class="relative">
+                        <input type="checkbox" id="show-equipotential" class="sr-only" checked>
+                        <div class="block bg-slate-200 w-10 h-6 rounded-full transition-colors group-hover:bg-slate-300"></div>
+                        <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform translate-x-4 shadow"></div>
+                    </div>
+                    <div class="ml-3 text-slate-700 text-sm font-medium">Еквіпотенціальні поверхні</div>
+                </label>
             </div>
 
             <div class="mt-auto pt-4">
@@ -173,6 +182,7 @@
         const q2Val = document.getElementById('q2-val');
         const showForcesToggle = document.getElementById('show-forces');
         const showFieldsToggle = document.getElementById('show-fields');
+        const showEquipotentialToggle = document.getElementById('show-equipotential');
 
         // Checkbox styling logic
         function updateToggleStyle(checkbox) {
@@ -189,7 +199,7 @@
             }
         }
 
-        [showForcesToggle, showFieldsToggle].forEach(toggle => {
+        [showForcesToggle, showFieldsToggle, showEquipotentialToggle].forEach(toggle => {
             toggle.addEventListener('change', (e) => {
                 updateToggleStyle(e.target);
                 requestDraw();
@@ -363,6 +373,21 @@
             return { x: Ex, y: Ey };
         }
 
+        // Calculate Electric Potential at a specific point
+        function getPotential(x, y) {
+            let V = 0;
+            const k = 10000;
+            for (let charge of charges) {
+                if (charge.q === 0) continue;
+                const dx = x - charge.x;
+                const dy = y - charge.y;
+                let r = Math.sqrt(dx * dx + dy * dy);
+                if (r < 5) r = 5; // prevent infinity near center
+                V += (k * charge.q) / r;
+            }
+            return V;
+        }
+
         // --- Drawing Functions ---
 
         function drawArrow(ctx, fromX, fromY, toX, toY, color, width) {
@@ -533,6 +558,79 @@
                 F1x, F1y, forceColor, lineWidth);
         }
 
+        function drawEquipotentials() {
+            if (!showEquipotentialToggle.checked) return;
+
+            const resolution = 15; // Grid cell size
+            const cols = Math.ceil(canvas.width / resolution);
+            const rows = Math.ceil(canvas.height / resolution);
+            
+            // Generate grid values
+            const grid = new Float32Array((cols + 1) * (rows + 1));
+            for (let i = 0; i <= cols; i++) {
+                for (let j = 0; j <= rows; j++) {
+                    grid[i + j * (cols + 1)] = getPotential(i * resolution, j * resolution);
+                }
+            }
+
+            // Levels of potential to draw
+            const levels = [-8000, -4000, -2000, -1000, -500, -250, 250, 500, 1000, 2000, 4000, 8000];
+
+            ctx.lineWidth = 1.5;
+            // Set line dash for equipotential lines to distinguish from field lines
+            ctx.setLineDash([5, 5]);
+
+            const getVal = (i, j) => grid[i + j * (cols + 1)];
+            
+            for (let level of levels) {
+                if (level > 0) ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)'; // Red-ish for positive
+                else ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)'; // Blue-ish for negative
+                
+                ctx.beginPath();
+                
+                for (let i = 0; i < cols; i++) {
+                    for (let j = 0; j < rows; j++) {
+                        const v0 = getVal(i, j) - level;
+                        const v1 = getVal(i + 1, j) - level;
+                        const v2 = getVal(i + 1, j + 1) - level;
+                        const v3 = getVal(i, j + 1) - level;
+
+                        const state = (v0 > 0 ? 1 : 0) | (v1 > 0 ? 2 : 0) | (v2 > 0 ? 4 : 0) | (v3 > 0 ? 8 : 0);
+                        if (state === 0 || state === 15) continue;
+
+                        const interp = (valA, valB) => Math.abs(valA) / (Math.abs(valA) + Math.abs(valB));
+                        const x0 = i * resolution, y0 = j * resolution;
+                        
+                        const a = [x0 + resolution * interp(v0, v1), y0];
+                        const b = [x0 + resolution, y0 + resolution * interp(v1, v2)];
+                        const c = [x0 + resolution * interp(v3, v2), y0 + resolution];
+                        const d = [x0, y0 + resolution * interp(v0, v3)];
+
+                        switch(state) {
+                            case 1: ctx.moveTo(a[0], a[1]); ctx.lineTo(d[0], d[1]); break;
+                            case 2: ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); break;
+                            case 3: ctx.moveTo(d[0], d[1]); ctx.lineTo(b[0], b[1]); break;
+                            case 4: ctx.moveTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); break;
+                            case 5: ctx.moveTo(d[0], d[1]); ctx.lineTo(a[0], a[1]); ctx.moveTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); break;
+                            case 6: ctx.moveTo(a[0], a[1]); ctx.lineTo(c[0], c[1]); break;
+                            case 7: ctx.moveTo(d[0], d[1]); ctx.lineTo(c[0], c[1]); break;
+                            case 8: ctx.moveTo(d[0], d[1]); ctx.lineTo(c[0], c[1]); break;
+                            case 9: ctx.moveTo(a[0], a[1]); ctx.lineTo(c[0], c[1]); break;
+                            case 10: ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.moveTo(c[0], c[1]); ctx.lineTo(d[0], d[1]); break;
+                            case 11: ctx.moveTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); break;
+                            case 12: ctx.moveTo(d[0], d[1]); ctx.lineTo(b[0], b[1]); break;
+                            case 13: ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); break;
+                            case 14: ctx.moveTo(a[0], a[1]); ctx.lineTo(d[0], d[1]); break;
+                        }
+                    }
+                }
+                ctx.stroke();
+            }
+            
+            // Reset line dash
+            ctx.setLineDash([]);
+        }
+
         function draw() {
             drawPending = false;
 
@@ -541,6 +639,7 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Draw layers
+            drawEquipotentials();
             drawFieldLines();
             drawForces();
 
