@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Симуляція Векторів</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+
+        #canvas-container {
+            cursor: crosshair;
+        }
+
+        .draggable-hover {
+            cursor: grab !important;
+        }
+
+        .dragging {
+            cursor: grabbing !important;
+        }
+
+        /* Кастомний скролбар для панелі */
+        #sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #sidebar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        #sidebar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        #sidebar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 h-screen flex">
+
+    <!-- Ліва панель -->
+    <div id="sidebar"
+        class="w-80 bg-white shadow-lg h-full flex flex-col z-10 border-r border-gray-200 overflow-y-auto">
+        <div class="p-5 border-b border-gray-200 bg-gray-50 sticky top-0">
+            <h1 class="text-xl font-bold text-gray-800">Вектори</h1>
+            <p class="text-xs text-gray-500 mt-1">Клікніть і тягніть на полі, щоб створити. Перетягуйте кінці для
+                редагування.</p>
+            <button id="clear-btn"
+                class="mt-3 w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded transition-colors text-sm">
+                Очистити всі
+            </button>
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <label class="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+                    <input type="checkbox" id="show-resultant" class="rounded text-blue-500 focus:ring-blue-500">
+                    <span>Показувати рівнодійну (суму сил)</span>
+                </label>
+                <div id="resultant-stats" class="text-xs text-gray-500 mt-2 hidden"></div>
+            </div>
+        </div>
+        <div id="vector-list" class="p-4 flex flex-col gap-3">
+            <!-- Список векторів буде генеруватись тут -->
+            <div class="text-gray-400 text-sm text-center mt-10" id="empty-state">
+                Немає доданих векторів
+            </div>
+        </div>
+    </div>
+
+    <!-- Полотно (Canvas) -->
+    <div id="canvas-container" class="flex-1 relative bg-white">
+        <canvas id="sim-canvas" class="absolute top-0 left-0 w-full h-full"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+        const vectorListEl = document.getElementById('vector-list');
+        const emptyStateEl = document.getElementById('empty-state');
+        const clearBtn = document.getElementById('clear-btn');
+
+        // Стан додатку
+        let vectors = [];
+        let nextId = 1;
+        let mode = 'idle'; // 'idle', 'drawing', 'dragging', 'dragging_body'
+
+        let currentVector = null; // Вектор, що малюється
+        let dragTarget = null; // { type, vector, point } або { offsetX, offsetY }
+        let hoveredTarget = null; // Для зміни курсору
+
+        // Тіло для прикладання сил
+        let physicsBody = { x: null, y: null, width: 80, height: 50 };
+
+        // Налаштування
+        const POINT_RADIUS = 8;
+        const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+
+        // Ініціалізація розмірів
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            if (physicsBody.x === null) {
+                physicsBody.x = canvas.width / 2;
+                physicsBody.y = canvas.height / 2;
+            }
+            draw();
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Допоміжні функції
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: evt.clientX - rect.left,
+                y: evt.clientY - rect.top
+            };
+        }
+
+        function distance(p1, p2) {
+            return Math.hypot(p2.x - p1.x, p2.y - p1.y);
+        }
+
+        function getVectorStats(v) {
+            const dx = v.end.x - v.start.x;
+            const dy = -(v.end.y - v.start.y); // Інвертуємо Y для математичного кута (вгору = +)
+            const length = Math.hypot(dx, dy);
+            let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            if (angle < 0) angle += 360;
+            return { dx, dy, length, angle };
+        }
+
+        // Перевірка чи миша над якоюсь точкою (початок/кінець вектора або тіло)
+        function getHitTarget(pos) {
+            // 1. Перевіряємо кінці векторів (найвищий пріоритет)
+            for (let i = vectors.length - 1; i >= 0; i--) {
+                const v = vectors[i];
+                if (distance(pos, v.end) <= POINT_RADIUS + 4) return { type: 'vector', vector: v, point: 'end' };
+                if (distance(pos, v.start) <= POINT_RADIUS + 4) return { type: 'vector', vector: v, point: 'start' };
+            }
+
+            // 2. Перевірка центру тіла (для початку малювання сили)
+            if (distance(pos, physicsBody) <= 15) return { type: 'body_center' };
+
+            // 3. Перевірка самого тіла (для його перетягування)
+            const hw = physicsBody.width / 2;
+            const hh = physicsBody.height / 2;
+            if (pos.x >= physicsBody.x - hw && pos.x <= physicsBody.x + hw &&
+                pos.y >= physicsBody.y - hh && pos.y <= physicsBody.y + hh) return { type: 'body' };
+
+            return null;
+        }
+
+        // --- Обробники подій миші ---
+
+        canvas.addEventListener('mousedown', (e) => {
+            const pos = getMousePos(e);
+            const target = getHitTarget(pos);
+
+            if (target) {
+                if (target.type === 'vector') {
+                    // Починаємо перетягувати існуючу точку
+                    mode = 'dragging';
+                    dragTarget = target;
+                    if (target.point === 'start') target.vector.attached = false;
+                    container.classList.add('dragging');
+                } else if (target.type === 'body') {
+                    // Починаємо перетягувати тіло
+                    mode = 'dragging_body';
+                    dragTarget = { offsetX: pos.x - physicsBody.x, offsetY: pos.y - physicsBody.y };
+                    container.classList.add('dragging');
+                } else if (target.type === 'body_center') {
+                    // Починаємо малювати новий вектор (силу) від центру тіла
+                    mode = 'drawing';
+                    const color = COLORS[(nextId - 1) % COLORS.length];
+                    currentVector = {
+                        id: nextId++,
+                        name: `F${nextId - 1}`, // Сили позначаємо як F
+                        start: { x: physicsBody.x, y: physicsBody.y },
+                        end: { ...pos },
+                        color: color,
+                        attached: true
+                    };
+                }
+            } else {
+                // Починаємо малювати новий вектор у вільному просторі
+                mode = 'drawing';
+                const color = COLORS[(nextId - 1) % COLORS.length];
+                currentVector = {
+                    id: nextId++,
+                    name: `v${nextId - 1}`,
+                    start: { ...pos },
+                    end: { ...pos },
+                    color: color,
+                    attached: false
+                };
+            }
+            draw();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const pos = getMousePos(e);
+
+            if (mode === 'drawing' && currentVector) {
+                currentVector.end = { ...pos };
+                draw();
+            } else if (mode === 'dragging' && dragTarget && dragTarget.type === 'vector') {
+                let newPos = { ...pos };
+                // Примагнічування початку вектора до центру тіла при наближенні
+                if (dragTarget.point === 'start' && distance(pos, physicsBody) <= 20) {
+                    newPos = { x: physicsBody.x, y: physicsBody.y };
+                }
+                dragTarget.vector[dragTarget.point] = newPos;
+                updateSidebar(); // Оновлюємо дані в реальному часі
+                draw();
+            } else if (mode === 'dragging_body') {
+                const oldX = physicsBody.x;
+                const oldY = physicsBody.y;
+
+                physicsBody.x = pos.x - dragTarget.offsetX;
+                physicsBody.y = pos.y - dragTarget.offsetY;
+
+                const dx = physicsBody.x - oldX;
+                const dy = physicsBody.y - oldY;
+
+                // Переміщуємо всі прикріплені вектори разом з тілом
+                vectors.forEach(v => {
+                    if (v.attached) {
+                        v.start.x += dx;
+                        v.start.y += dy;
+                        v.end.x += dx;
+                        v.end.y += dy;
+                    }
+                });
+                updateSidebar();
+                draw();
+            } else {
+                // Зміна курсору при наведенні
+                const target = getHitTarget(pos);
+                if (target !== hoveredTarget) {
+                    hoveredTarget = target;
+
+                    container.classList.remove('draggable-hover');
+                    container.style.cursor = 'crosshair'; // Скидання
+
+                    if (target) {
+                        if (target.type === 'body_center') {
+                            container.style.cursor = 'crosshair'; // Малювання з центру
+                        } else {
+                            container.classList.add('draggable-hover');
+                            container.style.cursor = 'grab'; // Перетягування тіла або точок
+                        }
+                    }
+                    draw();
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (mode === 'drawing' && currentVector) {
+                // Додаємо вектор тільки якщо він має хоч якусь довжину
+                if (distance(currentVector.start, currentVector.end) > 5) {
+                    vectors.push(currentVector);
+                    updateSidebar();
+                } else {
+                    nextId--; // Відкочуємо ID якщо клік був випадковий
+                }
+                currentVector = null;
+            } else if (mode === 'dragging' && dragTarget && dragTarget.point === 'start') {
+                // Перевіряємо чи прикріпився вектор до тіла після відпускання
+                if (distance(dragTarget.vector.start, physicsBody) <= 1) {
+                    dragTarget.vector.attached = true;
+                    if (dragTarget.vector.name.startsWith('v')) {
+                        dragTarget.vector.name = dragTarget.vector.name.replace('v', 'F');
+                    }
+                }
+                updateSidebar();
+            }
+
+            mode = 'idle';
+            dragTarget = null;
+            container.classList.remove('dragging');
+            container.style.cursor = '';
+            draw();
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            if (mode === 'drawing') {
+                currentVector = null;
+                mode = 'idle';
+                draw();
+            }
+        });
+
+        // --- Малювання ---
+
+        function drawGrid() {
+            ctx.strokeStyle = '#f0f0f0';
+            ctx.lineWidth = 1;
+            const step = 50;
+
+            ctx.beginPath();
+            for (let x = 0; x <= canvas.width; x += step) {
+                ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height);
+            }
+            for (let y = 0; y <= canvas.height; y += step) {
+                ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
+            }
+            ctx.stroke();
+        }
+
+        function drawBody() {
+            ctx.save();
+            ctx.translate(physicsBody.x, physicsBody.y);
+
+            const hw = physicsBody.width / 2;
+            const hh = physicsBody.height / 2;
+            const r = 6; // border radius for rounded corners
+
+            // Основне тіло (прямокутник)
+            ctx.fillStyle = '#cbd5e1';
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 3;
+
+            ctx.beginPath();
+            ctx.roundRect(-hw, -hh, physicsBody.width, physicsBody.height, r);
+            ctx.fill();
+            ctx.stroke();
+
+            // Центральна точка (точка прикладання сили)
+            const isCenterHovered = hoveredTarget && hoveredTarget.type === 'body_center';
+            ctx.fillStyle = isCenterHovered ? '#ef4444' : '#64748b';
+            ctx.beginPath();
+            ctx.arc(0, 0, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Зона прикріплення (візуальна підказка)
+            ctx.strokeStyle = isCenterHovered ? 'rgba(239, 68, 68, 0.4)' : 'rgba(100, 116, 139, 0.2)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 15, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Підпис
+            ctx.fillStyle = '#1e293b';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('ТІЛО', 0, -hh - 10);
+
+            ctx.restore();
+        }
+
+        function drawResultantForce() {
+            const showBtn = document.getElementById('show-resultant');
+            if (!showBtn || !showBtn.checked) {
+                const statsEl = document.getElementById('resultant-stats');
+                if (statsEl) statsEl.classList.add('hidden');
+                return;
+            }
+
+            let sumDx = 0;
+            let sumDy = 0;
+            let attachedCount = 0;
+
+            vectors.forEach(v => {
+                if (v.attached) {
+                    sumDx += (v.end.x - v.start.x);
+                    sumDy += (v.end.y - v.start.y);
+                    attachedCount++;
+                }
+            });
+
+            if (attachedCount > 0 && (Math.abs(sumDx) > 1 || Math.abs(sumDy) > 1)) {
+                const startX = physicsBody.x;
+                const startY = physicsBody.y;
+                const endX = startX + sumDx;
+                const endY = startY + sumDy;
+                const headlen = 16;
+                const angle = Math.atan2(endY - startY, endX - startX);
+
+                ctx.save();
+                ctx.strokeStyle = '#10b981'; // Зелений
+                ctx.lineWidth = 4;
+                ctx.setLineDash([8, 8]); // Пунктирна лінія
+
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#10b981';
+                ctx.beginPath();
+                ctx.moveTo(endX, endY);
+                ctx.lineTo(endX - headlen * Math.cos(angle - Math.PI / 7), endY - headlen * Math.sin(angle - Math.PI / 7));
+                ctx.lineTo(endX - headlen * Math.cos(angle + Math.PI / 7), endY - headlen * Math.sin(angle + Math.PI / 7));
+                ctx.fill();
+
+                ctx.fillStyle = '#047857';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.fillText('R', endX + 10, endY + 10);
+                ctx.restore();
+
+                // Оновлюємо UI панель
+                const statsEl = document.getElementById('resultant-stats');
+                if (statsEl) {
+                    const length = Math.hypot(sumDx, -sumDy);
+                    let resAngle = Math.atan2(-sumDy, sumDx) * (180 / Math.PI);
+                    if (resAngle < 0) resAngle += 360;
+
+                    statsEl.innerHTML = `
+                        <div class="bg-emerald-50 p-2 rounded border border-emerald-200 mt-2">
+                            <p class="font-bold text-emerald-700">Рівнодійна сила (R):</p>
+                            <p>X: ${Math.round(sumDx)}, Y: ${Math.round(-sumDy)}</p>
+                            <p>Довжина: ${Math.round(length)} px</p>
+                            <p>Кут: ${Math.round(resAngle)}°</p>
+                        </div>
+                    `;
+                    statsEl.classList.remove('hidden');
+                }
+            } else {
+                const statsEl = document.getElementById('resultant-stats');
+                if (statsEl) statsEl.classList.add('hidden');
+            }
+        }
+
+        function drawVector(v, isDrawing = false) {
+            const { start, end, color } = v;
+            const headlen = 16;
+            const angle = Math.atan2(end.y - start.y, end.x - start.x);
+
+            // Лінія
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
+            ctx.stroke();
+
+            // Стрілка
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(end.x, end.y);
+            ctx.lineTo(end.x - headlen * Math.cos(angle - Math.PI / 7), end.y - headlen * Math.sin(angle - Math.PI / 7));
+            ctx.lineTo(end.x - headlen * Math.cos(angle + Math.PI / 7), end.y - headlen * Math.sin(angle + Math.PI / 7));
+            ctx.fill();
+
+            // Точки для перетягування
+            if (!isDrawing) {
+                const isStartHovered = hoveredTarget && hoveredTarget.type === 'vector' && hoveredTarget.vector === v && hoveredTarget.point === 'start';
+                const isEndHovered = hoveredTarget && hoveredTarget.type === 'vector' && hoveredTarget.vector === v && hoveredTarget.point === 'end';
+
+                // Якщо вектор прикріплений, не малюємо точку на початку (там вже є центр тіла)
+                if (!v.attached) {
+                    drawPoint(start.x, start.y, color, isStartHovered);
+                }
+                drawPoint(end.x, end.y, color, isEndHovered);
+            }
+
+            // Підпис вектора
+            if (!isDrawing && distance(start, end) > 20) {
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 14px sans-serif';
+                const midX = (start.x + end.x) / 2;
+                const midY = (start.y + end.y) / 2 - 10;
+                ctx.fillText(`vec ${v.name}`, midX, midY);
+            }
+        }
+
+        function drawPoint(x, y, color, isHovered) {
+            ctx.beginPath();
+            ctx.arc(x, y, POINT_RADIUS + (isHovered ? 2 : 0), 0, 2 * Math.PI);
+            ctx.fillStyle = isHovered ? '#fff' : color;
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = color;
+            ctx.stroke();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            drawBody();
+
+            vectors.forEach(v => drawVector(v));
+            if (currentVector) drawVector(currentVector, true);
+
+            drawResultantForce();
+        }
+
+        // --- UI Панелі ---
+
+        function deleteVector(id) {
+            vectors = vectors.filter(v => v.id !== id);
+            hoveredTarget = null;
+            updateSidebar();
+            draw();
+        }
+
+        function updateSidebar() {
+            vectorListEl.innerHTML = '';
+
+            if (vectors.length === 0) {
+                vectorListEl.appendChild(emptyStateEl);
+                return;
+            }
+
+            vectors.forEach(v => {
+                const stats = getVectorStats(v);
+                const attachedBadge = v.attached ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded ml-2">Прикріплено</span>` : '';
+
+                const card = document.createElement('div');
+                card.className = 'bg-white border border-gray-200 rounded-lg p-3 shadow-sm relative overflow-hidden transition-all';
+                card.innerHTML = `
+                    <div class="absolute top-0 left-0 w-1.5 h-full" style="background-color: ${v.color}"></div>
+                    <div class="pl-2 flex justify-between items-start">
+                        <div>
+                            <h3 class="font-bold text-gray-800 flex items-center gap-1">
+                                <span class="font-mono bg-gray-100 px-1 rounded">${v.name}</span>
+                                ${attachedBadge}
+                            </h3>
+                            <div class="text-xs text-gray-500 mt-1 space-y-1">
+                                <p><span class="font-semibold text-gray-600">Комп:</span> X: ${Math.round(stats.dx)}, Y: ${Math.round(stats.dy)}</p>
+                                <p><span class="font-semibold text-gray-600">Довжина:</span> ${Math.round(stats.length)} px</p>
+                                <p><span class="font-semibold text-gray-600">Кут:</span> ${Math.round(stats.angle)}°</p>
+                            </div>
+                        </div>
+                        <button onclick="deleteVector(${v.id})" class="text-gray-400 hover:text-red-500 transition-colors p-1" title="Видалити вектор">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+
+                // Підсвічування при наведенні на картку
+                card.addEventListener('mouseenter', () => {
+                    hoveredTarget = { type: 'vector', vector: v, point: null };
+                    draw();
+                });
+                card.addEventListener('mouseleave', () => {
+                    hoveredTarget = null;
+                    draw();
+                });
+
+                vectorListEl.appendChild(card);
+            });
+        }
+
+        clearBtn.addEventListener('click', () => {
+            vectors = [];
+            nextId = 1;
+            updateSidebar();
+            draw();
+        });
+
+        const showResultantCheckbox = document.getElementById('show-resultant');
+        if (showResultantCheckbox) {
+            showResultantCheckbox.addEventListener('change', draw);
+        }
+
+    </script>
+</body>
+
+</html>
