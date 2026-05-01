@@ -154,8 +154,12 @@
                 <label class="flex items-center cursor-pointer group">
                     <div class="relative">
                         <input type="checkbox" id="show-equipotential" class="sr-only" checked>
-                        <div class="block bg-slate-200 w-10 h-6 rounded-full transition-colors group-hover:bg-slate-300"></div>
-                        <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform translate-x-4 shadow"></div>
+                        <div
+                            class="block bg-slate-200 w-10 h-6 rounded-full transition-colors group-hover:bg-slate-300">
+                        </div>
+                        <div
+                            class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform translate-x-4 shadow">
+                        </div>
                     </div>
                     <div class="ml-3 text-slate-700 text-sm font-medium">Еквіпотенціальні поверхні</div>
                 </label>
@@ -564,7 +568,7 @@
             const resolution = 15; // Grid cell size
             const cols = Math.ceil(canvas.width / resolution);
             const rows = Math.ceil(canvas.height / resolution);
-            
+
             // Generate grid values
             const grid = new Float32Array((cols + 1) * (rows + 1));
             for (let i = 0; i <= cols; i++) {
@@ -581,13 +585,13 @@
             ctx.setLineDash([5, 5]);
 
             const getVal = (i, j) => grid[i + j * (cols + 1)];
-            
+
             for (let level of levels) {
                 if (level > 0) ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)'; // Red-ish for positive
                 else ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)'; // Blue-ish for negative
-                
+
                 ctx.beginPath();
-                
+
                 for (let i = 0; i < cols; i++) {
                     for (let j = 0; j < rows; j++) {
                         const v0 = getVal(i, j) - level;
@@ -600,13 +604,13 @@
 
                         const interp = (valA, valB) => Math.abs(valA) / (Math.abs(valA) + Math.abs(valB));
                         const x0 = i * resolution, y0 = j * resolution;
-                        
+
                         const a = [x0 + resolution * interp(v0, v1), y0];
                         const b = [x0 + resolution, y0 + resolution * interp(v1, v2)];
                         const c = [x0 + resolution * interp(v3, v2), y0 + resolution];
                         const d = [x0, y0 + resolution * interp(v0, v3)];
 
-                        switch(state) {
+                        switch (state) {
                             case 1: ctx.moveTo(a[0], a[1]); ctx.lineTo(d[0], d[1]); break;
                             case 2: ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); break;
                             case 3: ctx.moveTo(d[0], d[1]); ctx.lineTo(b[0], b[1]); break;
@@ -626,7 +630,7 @@
                 }
                 ctx.stroke();
             }
-            
+
             // Reset line dash
             ctx.setLineDash([]);
         }

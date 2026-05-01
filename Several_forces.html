@@ -52,7 +52,8 @@
         class="w-80 bg-white shadow-lg h-full flex flex-col z-10 border-r border-gray-200 overflow-y-auto">
         <div class="p-5 border-b border-gray-200 bg-gray-50 sticky top-0">
             <h1 class="text-xl font-bold text-gray-800">Вектори</h1>
-            <p class="text-xs text-gray-500 mt-1">Клікніть і тягніть на полі, щоб створити. Перетягуйте кінці для
+            <p class="text-xs text-gray-500 mt-1">Клікніть на тілі, щоб створити силу з будь-якої точки. Alt+клік —
+                перетягнути тіло. Перетягуйте кінці для
                 редагування.</p>
             <button id="clear-btn"
                 class="mt-3 w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded transition-colors text-sm">
@@ -97,11 +98,16 @@
         let hoveredTarget = null; // Для зміни курсору
 
         // Тіло для прикладання сил
-        let physicsBody = { x: null, y: null, width: 80, height: 50 };
+        let physicsBody = { x: null, y: null, width: 180, height: 113 };
 
         // Налаштування
-        const POINT_RADIUS = 8;
+        const POINT_RADIUS = 2;
         const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+        const PIXELS_PER_NEWTON = 100; // 100 пікселів = 1 Н
+
+        function pxToNewtons(px) {
+            return (px / PIXELS_PER_NEWTON).toFixed(2);
+        }
 
         // Ініціалізація розмірів
         function resizeCanvas() {
@@ -147,16 +153,21 @@
                 if (distance(pos, v.start) <= POINT_RADIUS + 4) return { type: 'vector', vector: v, point: 'start' };
             }
 
-            // 2. Перевірка центру тіла (для початку малювання сили)
-            if (distance(pos, physicsBody) <= 15) return { type: 'body_center' };
-
-            // 3. Перевірка самого тіла (для його перетягування)
+            // 2. Перевірка тіла (клік = малювання сили, Alt+клік = перетягування)
             const hw = physicsBody.width / 2;
             const hh = physicsBody.height / 2;
             if (pos.x >= physicsBody.x - hw && pos.x <= physicsBody.x + hw &&
                 pos.y >= physicsBody.y - hh && pos.y <= physicsBody.y + hh) return { type: 'body' };
 
             return null;
+        }
+
+        // Перевірка чи точка знаходиться всередині тіла
+        function isInsideBody(pos) {
+            const hw = physicsBody.width / 2;
+            const hh = physicsBody.height / 2;
+            return pos.x >= physicsBody.x - hw && pos.x <= physicsBody.x + hw &&
+                pos.y >= physicsBody.y - hh && pos.y <= physicsBody.y + hh;
         }
 
         // --- Обробники подій миші ---
@@ -172,19 +183,19 @@
                     dragTarget = target;
                     if (target.point === 'start') target.vector.attached = false;
                     container.classList.add('dragging');
-                } else if (target.type === 'body') {
-                    // Починаємо перетягувати тіло
+                } else if (target.type === 'body' && e.altKey) {
+                    // Alt+клік — перетягувати тіло
                     mode = 'dragging_body';
                     dragTarget = { offsetX: pos.x - physicsBody.x, offsetY: pos.y - physicsBody.y };
                     container.classList.add('dragging');
-                } else if (target.type === 'body_center') {
-                    // Починаємо малювати новий вектор (силу) від центру тіла
+                } else if (target.type === 'body') {
+                    // Клік на тілі — малювати новий вектор (силу) від точки кліку
                     mode = 'drawing';
                     const color = COLORS[(nextId - 1) % COLORS.length];
                     currentVector = {
                         id: nextId++,
-                        name: `F${nextId - 1}`, // Сили позначаємо як F
-                        start: { x: physicsBody.x, y: physicsBody.y },
+                        name: `F${nextId - 1}`,
+                        start: { ...pos },
                         end: { ...pos },
                         color: color,
                         attached: true
@@ -214,9 +225,9 @@
                 draw();
             } else if (mode === 'dragging' && dragTarget && dragTarget.type === 'vector') {
                 let newPos = { ...pos };
-                // Примагнічування початку вектора до центру тіла при наближенні
-                if (dragTarget.point === 'start' && distance(pos, physicsBody) <= 20) {
-                    newPos = { x: physicsBody.x, y: physicsBody.y };
+                // Примагнічування початку вектора до тіла при наближенні
+                if (dragTarget.point === 'start' && isInsideBody(pos)) {
+                    newPos = { ...pos }; // Прикріплюємо в точці де знаходиться миша
                 }
                 dragTarget.vector[dragTarget.point] = newPos;
                 updateSidebar(); // Оновлюємо дані в реальному часі
@@ -252,11 +263,11 @@
                     container.style.cursor = 'crosshair'; // Скидання
 
                     if (target) {
-                        if (target.type === 'body_center') {
-                            container.style.cursor = 'crosshair'; // Малювання з центру
+                        if (target.type === 'body') {
+                            container.style.cursor = 'crosshair'; // Малювання сили з тіла
                         } else {
                             container.classList.add('draggable-hover');
-                            container.style.cursor = 'grab'; // Перетягування тіла або точок
+                            container.style.cursor = 'grab'; // Перетягування точок
                         }
                     }
                     draw();
@@ -276,7 +287,7 @@
                 currentVector = null;
             } else if (mode === 'dragging' && dragTarget && dragTarget.point === 'start') {
                 // Перевіряємо чи прикріпився вектор до тіла після відпускання
-                if (distance(dragTarget.vector.start, physicsBody) <= 1) {
+                if (isInsideBody(dragTarget.vector.start)) {
                     dragTarget.vector.attached = true;
                     if (dragTarget.vector.name.startsWith('v')) {
                         dragTarget.vector.name = dragTarget.vector.name.replace('v', 'F');
@@ -335,25 +346,22 @@
             ctx.fill();
             ctx.stroke();
 
-            // Центральна точка (точка прикладання сили)
-            const isCenterHovered = hoveredTarget && hoveredTarget.type === 'body_center';
-            ctx.fillStyle = isCenterHovered ? '#ef4444' : '#64748b';
+            // Маленький хрестик в центрі (орієнтир)
+            ctx.strokeStyle = 'rgba(100, 116, 139, 0.4)';
+            ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.arc(0, 0, 6, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Зона прикріплення (візуальна підказка)
-            ctx.strokeStyle = isCenterHovered ? 'rgba(239, 68, 68, 0.4)' : 'rgba(100, 116, 139, 0.2)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, 15, 0, Math.PI * 2);
+            ctx.moveTo(-6, 0); ctx.lineTo(6, 0);
+            ctx.moveTo(0, -6); ctx.lineTo(0, 6);
             ctx.stroke();
 
-            // Підпис
-            ctx.fillStyle = '#1e293b';
-            ctx.font = 'bold 12px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('ТІЛО', 0, -hh - 10);
+
+            // Підказка
+            const isBodyHovered = hoveredTarget && hoveredTarget.type === 'body';
+            if (isBodyHovered) {
+                ctx.fillStyle = 'rgba(30, 41, 59, 0.5)';
+                ctx.font = '10px sans-serif';
+                ctx.fillText('клік — сила / Alt+клік — рухати', 0, hh + 16);
+            }
 
             ctx.restore();
         }
@@ -366,31 +374,65 @@
                 return;
             }
 
-            let sumDx = 0;
-            let sumDy = 0;
-            let attachedCount = 0;
+            // Збираємо всі прикріплені сили
+            const attachedForces = vectors.filter(v => v.attached);
+            if (attachedForces.length === 0) {
+                const statsEl = document.getElementById('resultant-stats');
+                if (statsEl) statsEl.classList.add('hidden');
+                return;
+            }
 
-            vectors.forEach(v => {
-                if (v.attached) {
-                    sumDx += (v.end.x - v.start.x);
-                    sumDy += (v.end.y - v.start.y);
-                    attachedCount++;
-                }
+            // 1. Обчислення рівнодійної сили (векторна сума) та сумарного моменту
+            let sumFx = 0;
+            let sumFy = 0;
+            let totalTorque = 0; // Момент відносно центру
+
+            attachedForces.forEach(v => {
+                const fx = v.end.x - v.start.x;
+                const fy = v.end.y - v.start.y;
+                sumFx += fx;
+                sumFy += fy;
+
+                const rx = v.start.x - physicsBody.x;
+                const ry = v.start.y - physicsBody.y;
+                totalTorque += (rx * fy - ry * fx);
             });
 
-            if (attachedCount > 0 && (Math.abs(sumDx) > 1 || Math.abs(sumDy) > 1)) {
-                const startX = physicsBody.x;
-                const startY = physicsBody.y;
-                const endX = startX + sumDx;
-                const endY = startY + sumDy;
+            // Малюємо вектор рівнодійної
+            const rSq = sumFx * sumFx + sumFy * sumFy;
+            const rLength = Math.sqrt(rSq);
+            if (rLength > 1) {
+                // Зміщуємо точку прикладання рівнодійної так, 
+                // щоб вона створювала правильний еквівалентний момент:
+                // r_x * R_y - r_y * R_x = totalTorque
+                // Вектор зміщення, перпендикулярний до рівнодійної:
+                const shiftX = (totalTorque * sumFy) / rSq;
+                const shiftY = -(totalTorque * sumFx) / rSq;
+
+                const startX = physicsBody.x + shiftX;
+                const startY = physicsBody.y + shiftY;
+                const endX = startX + sumFx;
+                const endY = startY + sumFy;
                 const headlen = 16;
-                const angle = Math.atan2(endY - startY, endX - startX);
+                const angle = Math.atan2(sumFy, sumFx);
 
                 ctx.save();
-                ctx.strokeStyle = '#10b981'; // Зелений
+                ctx.strokeStyle = '#10b981';
                 ctx.lineWidth = 4;
-                ctx.setLineDash([8, 8]); // Пунктирна лінія
+                ctx.setLineDash([8, 8]);
 
+                // Лінія дії рівнодійної (необов'язково, але допомагає зрозуміти зміщення)
+                if (Math.abs(shiftX) > 1 || Math.abs(shiftY) > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(physicsBody.x, physicsBody.y);
+                    ctx.lineTo(startX, startY);
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
+                    ctx.stroke();
+                }
+
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#10b981';
                 ctx.beginPath();
                 ctx.moveTo(startX, startY);
                 ctx.lineTo(endX, endY);
@@ -404,32 +446,70 @@
                 ctx.lineTo(endX - headlen * Math.cos(angle + Math.PI / 7), endY - headlen * Math.sin(angle + Math.PI / 7));
                 ctx.fill();
 
-                ctx.fillStyle = '#047857';
-                ctx.font = 'bold 16px sans-serif';
-                ctx.fillText('R', endX + 10, endY + 10);
+                // Підпис рівнодійної — F⃗ без індексу
+                drawVectorLabel(endX + 10, endY + 6, null, '#047857');
                 ctx.restore();
-
-                // Оновлюємо UI панель
-                const statsEl = document.getElementById('resultant-stats');
-                if (statsEl) {
-                    const length = Math.hypot(sumDx, -sumDy);
-                    let resAngle = Math.atan2(-sumDy, sumDx) * (180 / Math.PI);
-                    if (resAngle < 0) resAngle += 360;
-
-                    statsEl.innerHTML = `
-                        <div class="bg-emerald-50 p-2 rounded border border-emerald-200 mt-2">
-                            <p class="font-bold text-emerald-700">Рівнодійна сила (R):</p>
-                            <p>X: ${Math.round(sumDx)}, Y: ${Math.round(-sumDy)}</p>
-                            <p>Довжина: ${Math.round(length)} px</p>
-                            <p>Кут: ${Math.round(resAngle)}°</p>
-                        </div>
-                    `;
-                    statsEl.classList.remove('hidden');
-                }
-            } else {
-                const statsEl = document.getElementById('resultant-stats');
-                if (statsEl) statsEl.classList.add('hidden');
             }
+
+            // 4. Оновлюємо UI панель
+            const statsEl = document.getElementById('resultant-stats');
+            if (statsEl) {
+                // Кут у математичній системі координат (вгору = +Y)
+                let resAngle = Math.atan2(-sumFy, sumFx) * (180 / Math.PI);
+                if (resAngle < 0) resAngle += 360;
+
+                const hasForce = rLength > 1;
+                statsEl.innerHTML = `
+                    <div class="bg-emerald-50 p-2 rounded border border-emerald-200 mt-2">
+                        <p class="font-bold text-emerald-700">Рівнодійна сила (F):</p>
+                        ${hasForce ? `
+                            <p>Fx: ${Math.round(sumFx)}, Fy: ${Math.round(-sumFy)}</p>
+                            <p>|F|: ${pxToNewtons(rLength)} Н</p>
+                            <p>Кут: ${Math.round(resAngle)}°</p>
+                        ` : `<p class="text-gray-500">≈ 0 (сили врівноважені)</p>`}
+                    </div>
+                `;
+                statsEl.classList.remove('hidden');
+            }
+        }
+
+        // Малює підпис вектора: F з індексом та знаком вектора (стрілка зверху)
+        function drawVectorLabel(x, y, index, color) {
+            ctx.save();
+            ctx.fillStyle = color || '#333';
+
+            // Літера F
+            ctx.font = 'bold italic 16px serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText('F', x, y);
+            const fWidth = ctx.measureText('F').width;
+
+            // Стрілка-вектор над F (→)
+            const arrowY = y - 16;
+            const arrowStartX = x;
+            const arrowEndX = x + fWidth;
+            ctx.strokeStyle = color || '#333';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(arrowStartX, arrowY);
+            ctx.lineTo(arrowEndX, arrowY);
+            ctx.stroke();
+            // Вістря стрілки
+            ctx.beginPath();
+            ctx.moveTo(arrowEndX, arrowY);
+            ctx.lineTo(arrowEndX - 4, arrowY - 3);
+            ctx.moveTo(arrowEndX, arrowY);
+            ctx.lineTo(arrowEndX - 4, arrowY + 3);
+            ctx.stroke();
+
+            // Індекс (маленький, внизу справа)
+            if (index !== undefined && index !== null) {
+                ctx.font = 'bold 10px serif';
+                ctx.fillText(String(index), x + fWidth + 1, y + 4);
+            }
+
+            ctx.restore();
         }
 
         function drawVector(v, isDrawing = false) {
@@ -453,25 +533,29 @@
             ctx.lineTo(end.x - headlen * Math.cos(angle + Math.PI / 7), end.y - headlen * Math.sin(angle + Math.PI / 7));
             ctx.fill();
 
-            // Точки для перетягування
+            // Точки для перетягування (з'являються лише при натисканні миші або наведенні)
             if (!isDrawing) {
                 const isStartHovered = hoveredTarget && hoveredTarget.type === 'vector' && hoveredTarget.vector === v && hoveredTarget.point === 'start';
                 const isEndHovered = hoveredTarget && hoveredTarget.type === 'vector' && hoveredTarget.vector === v && hoveredTarget.point === 'end';
+                const isDraggingThis = mode === 'dragging' && dragTarget && dragTarget.vector === v;
+                const showPoints = isStartHovered || isEndHovered || isDraggingThis;
 
-                // Якщо вектор прикріплений, не малюємо точку на початку (там вже є центр тіла)
-                if (!v.attached) {
-                    drawPoint(start.x, start.y, color, isStartHovered);
+                if (showPoints) {
+                    // Якщо вектор прикріплений, не малюємо точку на початку (там вже є центр тіла)
+                    if (!v.attached) {
+                        drawPoint(start.x, start.y, color, isStartHovered);
+                    }
+                    drawPoint(end.x, end.y, color, isEndHovered);
                 }
-                drawPoint(end.x, end.y, color, isEndHovered);
             }
 
-            // Підпис вектора
+            // Підпис вектора (F⃗ з індексом)
             if (!isDrawing && distance(start, end) > 20) {
-                ctx.fillStyle = '#333';
-                ctx.font = 'bold 14px sans-serif';
                 const midX = (start.x + end.x) / 2;
                 const midY = (start.y + end.y) / 2 - 10;
-                ctx.fillText(`vec ${v.name}`, midX, midY);
+                // Витягуємо числовий індекс з імені (F1 → 1, F2 → 2, v3 → 3)
+                const idx = v.name.replace(/[^0-9]/g, '');
+                drawVectorLabel(midX, midY, idx, '#333');
             }
         }
 
@@ -485,6 +569,42 @@
             ctx.stroke();
         }
 
+        // Легенда масштабу (1 ньютон)
+        function drawScaleLegend() {
+            const barLength = PIXELS_PER_NEWTON; // 1 Н у пікселях
+            const margin = 30;
+            const barY = canvas.height - margin;
+            const barX = canvas.width - margin - barLength;
+
+            ctx.save();
+
+            // Лінія масштабу
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(barX, barY);
+            ctx.lineTo(barX + barLength, barY);
+            ctx.stroke();
+
+            // Засічки на кінцях
+            const tickH = 8;
+            ctx.beginPath();
+            ctx.moveTo(barX, barY - tickH);
+            ctx.lineTo(barX, barY + tickH);
+            ctx.moveTo(barX + barLength, barY - tickH);
+            ctx.lineTo(barX + barLength, barY + tickH);
+            ctx.stroke();
+
+            // Підпис
+            ctx.fillStyle = '#475569';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('1 Н', barX + barLength / 2, barY + tickH + 4);
+
+            ctx.restore();
+        }
+
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawGrid();
@@ -494,6 +614,7 @@
             if (currentVector) drawVector(currentVector, true);
 
             drawResultantForce();
+            drawScaleLegend();
         }
 
         // --- UI Панелі ---
@@ -529,7 +650,7 @@
                             </h3>
                             <div class="text-xs text-gray-500 mt-1 space-y-1">
                                 <p><span class="font-semibold text-gray-600">Комп:</span> X: ${Math.round(stats.dx)}, Y: ${Math.round(stats.dy)}</p>
-                                <p><span class="font-semibold text-gray-600">Довжина:</span> ${Math.round(stats.length)} px</p>
+                                <p><span class="font-semibold text-gray-600">Сила:</span> ${pxToNewtons(stats.length)} Н</p>
                                 <p><span class="font-semibold text-gray-600">Кут:</span> ${Math.round(stats.angle)}°</p>
                             </div>
                         </div>
