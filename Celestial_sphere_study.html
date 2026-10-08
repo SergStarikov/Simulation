@@ -9,7 +9,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             overflow: hidden;
@@ -28,7 +32,7 @@
             background: rgba(8, 10, 22, 0.94);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
-            border-right: 1px solid rgba(255,255,255,0.07);
+            border-right: 1px solid rgba(255, 255, 255, 0.07);
             display: flex;
             flex-direction: column;
             z-index: 100;
@@ -36,13 +40,22 @@
             overflow-x: hidden;
         }
 
-        #panel::-webkit-scrollbar { width: 4px; }
-        #panel::-webkit-scrollbar-track { background: transparent; }
-        #panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+        #panel::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #panel::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #panel::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 2px;
+        }
 
         #panel-header {
             padding: 28px 24px 18px;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
             flex-shrink: 0;
         }
 
@@ -65,7 +78,7 @@
 
         .section {
             padding: 14px 16px;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
         }
 
         .section-title {
@@ -109,7 +122,7 @@
             margin-right: 11px;
             flex-shrink: 0;
             transition: all 0.25s ease;
-            box-shadow: 0 0 4px rgba(0,0,0,0.3);
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
         }
 
         .item.active .dot {
@@ -118,13 +131,20 @@
         }
 
         @keyframes dotPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.5); }
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.5);
+            }
         }
 
         .slider-section {
             padding: 14px 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
         }
 
         .slider-section label {
@@ -144,7 +164,7 @@
             -webkit-appearance: none;
             width: 100%;
             height: 4px;
-            background: rgba(255,255,255,0.08);
+            background: rgba(255, 255, 255, 0.08);
             border-radius: 2px;
             outline: none;
         }
@@ -156,19 +176,19 @@
             border-radius: 50%;
             background: #00aaff;
             cursor: pointer;
-            border: 2px solid rgba(0,170,255,0.3);
-            box-shadow: 0 0 10px rgba(0,170,255,0.4);
+            border: 2px solid rgba(0, 170, 255, 0.3);
+            box-shadow: 0 0 10px rgba(0, 170, 255, 0.4);
             transition: box-shadow 0.2s;
         }
 
         input[type="range"]::-webkit-slider-thumb:hover {
-            box-shadow: 0 0 16px rgba(0,170,255,0.6);
+            box-shadow: 0 0 16px rgba(0, 170, 255, 0.6);
         }
 
         /* ===== DESCRIPTION BOX ===== */
         #description-box {
             padding: 18px 22px;
-            border-top: 1px solid rgba(255,255,255,0.06);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
             background: rgba(0, 80, 180, 0.04);
             min-height: 100px;
             flex-shrink: 0;
@@ -191,8 +211,13 @@
             transition: color 0.3s ease;
         }
 
-        #description-box.visible #desc-title { color: #d8e0f0; }
-        #description-box.visible #desc-text { color: #8898b0; }
+        #description-box.visible #desc-title {
+            color: #d8e0f0;
+        }
+
+        #description-box.visible #desc-text {
+            color: #8898b0;
+        }
 
         /* ===== 3D CANVAS ===== */
         #canvas-container {
@@ -230,37 +255,53 @@
             <div class="section-title">Точки</div>
             <div class="item" data-id="Z"><span class="dot" style="background:#ff4444"></span>Z — Зеніт</div>
             <div class="item" data-id="Z_prime"><span class="dot" style="background:#ff4444"></span>Z' — Надір</div>
-            <div class="item" data-id="P_N"><span class="dot" style="background:#00bbff"></span>P<sub>N</sub> — Півн. полюс світу</div>
-            <div class="item" data-id="P_S"><span class="dot" style="background:#00bbff"></span>P<sub>S</sub> — Півд. полюс світу</div>
+            <div class="item" data-id="P_N"><span class="dot" style="background:#00bbff"></span>P<sub>N</sub> — Півн.
+                полюс світу</div>
+            <div class="item" data-id="P_S"><span class="dot" style="background:#00bbff"></span>P<sub>S</sub> — Півд.
+                полюс світу</div>
             <div class="item" data-id="N"><span class="dot" style="background:#e050a8"></span>N — Точка півночі</div>
             <div class="item" data-id="S"><span class="dot" style="background:#e050a8"></span>S — Точка півдня</div>
             <div class="item" data-id="E"><span class="dot" style="background:#e050a8"></span>E — Точка сходу</div>
             <div class="item" data-id="W"><span class="dot" style="background:#e050a8"></span>W — Точка заходу</div>
-            <div class="item" data-id="Q"><span class="dot" style="background:#00cc66"></span>Q — Верхня кульмінація</div>
-            <div class="item" data-id="Q_prime"><span class="dot" style="background:#00cc66"></span>Q' — Нижня кульмінація</div>
+            <div class="item" data-id="Q"><span class="dot" style="background:#00cc66"></span>Q — Верхня кульмінація
+            </div>
+            <div class="item" data-id="Q_prime"><span class="dot" style="background:#00cc66"></span>Q' — Нижня
+                кульмінація</div>
             <div class="item" data-id="O"><span class="dot" style="background:#aaaaaa"></span>O — Центр сфери</div>
             <div class="item" data-id="M"><span class="dot" style="background:#ffd700"></span>M — Світило (зоря)</div>
         </div>
 
         <div class="section">
             <div class="section-title">Лінії та кола</div>
-            <div class="item" data-id="vertical"><span class="dot" style="background:#ff4444"></span>Прямовисна лінія (ZZ')</div>
-            <div class="item" data-id="axis"><span class="dot" style="background:#00bbff"></span>Вісь світу (P<sub>N</sub>P<sub>S</sub>)</div>
-            <div class="item" data-id="meridian"><span class="dot" style="background:#ff7744"></span>Небесний меридіан</div>
-            <div class="item" data-id="equator"><span class="dot" style="background:#00cc66"></span>Небесний екватор</div>
-            <div class="item" data-id="horizon_circle"><span class="dot" style="background:#e050a8"></span>Математичний горизонт</div>
-            <div class="item" data-id="parallel"><span class="dot" style="background:#5599ff"></span>Добова паралель M</div>
+            <div class="item" data-id="vertical"><span class="dot" style="background:#ff4444"></span>Прямовисна лінія
+                (ZZ')</div>
+            <div class="item" data-id="axis"><span class="dot" style="background:#00bbff"></span>Вісь світу
+                (P<sub>N</sub>P<sub>S</sub>)</div>
+            <div class="item" data-id="meridian"><span class="dot" style="background:#ff7744"></span>Небесний меридіан
+            </div>
+            <div class="item" data-id="equator"><span class="dot" style="background:#00cc66"></span>Небесний екватор
+            </div>
+            <div class="item" data-id="horizon_circle"><span class="dot" style="background:#e050a8"></span>Математичний
+                горизонт</div>
+            <div class="item" data-id="parallel"><span class="dot" style="background:#5599ff"></span>Добова паралель M
+            </div>
+            <div class="item" data-id="celestial_sphere"><span class="dot" style="background:#38bdf8"></span>Небесна
+                сфера (поверхня та сітка)
+            </div>
         </div>
 
         <div class="slider-section">
             <div class="section-title">Параметри</div>
             <label>Широта спостерігача φ: <span id="lat-val">50°</span></label>
             <input type="range" id="lat-slider" min="-90" max="90" value="50" step="1">
+            <label style="margin-top: 14px;">Видимість сфери: <span id="sphere-op-val">40%</span></label>
+            <input type="range" id="sphere-op-slider" min="10" max="100" value="40" step="5">
         </div>
 
         <div id="description-box">
             <div id="desc-title">Оберіть елемент</div>
-            <div id="desc-text">Натисніть на будь-який елемент у списку, щоб побачити його опис та підсвітити на 3D-моделі.</div>
+            <div id="desc-text">Натисніть на будь-який елемент у списку, щоб побачити його опис та підсвітити на
+                3D-моделі.</div>
         </div>
     </div>
 
@@ -269,517 +310,615 @@
     <div id="hint">Обертати: ЛКМ · Наближати: коліщатко · Переміщувати: ПКМ</div>
 
     <script>
-    // ==================== CONFIGURATION ====================
-    const R = 12;
-    let latitude = 50;
-    const STAR_DEC = 35;
-    const STAR_HA = -25;
+        // ==================== CONFIGURATION ====================
+        const R = 12;
+        let latitude = 50;
+        const STAR_DEC = 35;
+        const STAR_HA = -25;
 
-    // ==================== DESCRIPTIONS ====================
-    const descriptions = {
-        Z: {
-            title: 'Z — Зеніт',
-            text: 'Точка на небесній сфері, розташована прямо над головою спостерігача. Кутова відстань від горизонту до зеніту дорівнює 90°.'
-        },
-        Z_prime: {
-            title: "Z' — Надір",
-            text: 'Точка, діаметрально протилежна зеніту, розташована прямо під ногами спостерігача.'
-        },
-        P_N: {
-            title: 'Pₙ — Північний полюс світу',
-            text: 'Нерухома точка, навколо якої відбувається видимий добовий рух зір. Знаходиться поблизу Полярної зорі. Висота полюса над горизонтом дорівнює географічній широті спостерігача φ.'
-        },
-        P_S: {
-            title: 'Pₛ — Південний полюс світу',
-            text: 'Точка, діаметрально протилежна Pₙ. Для спостерігачів Північної півкулі знаходиться під горизонтом.'
-        },
-        N: {
-            title: 'N — Точка півночі',
-            text: 'Точка перетину небесного меридіана з лінією горизонту, найближча до північного полюса світу Pₙ.'
-        },
-        S: {
-            title: 'S — Точка півдня',
-            text: 'Точка перетину небесного меридіана з горизонтом, найближча до Pₛ. Верхня кульмінація зір відбувається в напрямку точки S.'
-        },
-        E: {
-            title: 'E — Точка сходу',
-            text: 'Точка горизонту, де перетинаються площини горизонту та небесного екватора (на сході). Тут сходять зорі з нульовим схиленням.'
-        },
-        W: {
-            title: 'W — Точка заходу',
-            text: 'Точка горизонту, де перетинаються площини горизонту та небесного екватора (на заході). Тут заходять зорі з нульовим схиленням.'
-        },
-        Q: {
-            title: 'Q — Точка верхньої кульмінації',
-            text: 'Точка перетину небесного екватора з меридіаном над горизонтом. Тут небесний екватор досягає найбільшої висоти h = 90° − φ.'
-        },
-        Q_prime: {
-            title: "Q' — Точка нижньої кульмінації",
-            text: 'Точка перетину небесного екватора з меридіаном під горизонтом, діаметрально протилежна Q.'
-        },
-        O: {
-            title: 'O — Центр небесної сфери',
-            text: 'Точка, де знаходиться спостерігач. Через неї проходять вісь світу та прямовисна лінія.'
-        },
-        M: {
-            title: 'M — Світило (зоря)',
-            text: 'Зоря або інший небесний об\'єкт. У видимому добовому русі описує добову паралель — мале коло, паралельне небесному екватору.'
-        },
-        vertical: {
-            title: 'Прямовисна лінія (ZOZ\')',
-            text: 'Вертикальна пряма, що з\'єднує зеніт Z і надір Z\' через центр сфери O. Перпендикулярна до площини математичного горизонту.'
-        },
-        axis: {
-            title: 'Вісь світу (PₙOPₛ)',
-            text: 'Пряма, навколо якої обертається небесна сфера. Нахил осі до площини горизонту дорівнює широті спостерігача φ.'
-        },
-        meridian: {
-            title: 'Небесний меридіан',
-            text: 'Велике коло, що проходить через зеніт Z, надір Z\' та обидва полюси світу Pₙ і Pₛ. Ділить сферу на східну та західну півсфери.'
-        },
-        equator: {
-            title: 'Небесний екватор',
-            text: 'Велике коло, перпендикулярне до осі світу. Ділить небесну сферу на північну та південну півсфери. Проходить через точки сходу E і заходу W.'
-        },
-        horizon_circle: {
-            title: 'Математичний горизонт',
-            text: 'Велике коло, перпендикулярне до прямовисної лінії ZZ\'. Ділить небесну сферу на видиму та невидиму частини. Проходить через N, S, E, W.'
-        },
-        parallel: {
-            title: 'Добова паралель M',
-            text: 'Мале коло, паралельне небесному екватору, яке описує світило M у видимому добовому русі навколо осі світу протягом доби.'
-        }
-    };
+        // ==================== DESCRIPTIONS ====================
+        const descriptions = {
+            Z: {
+                title: 'Z — Зеніт',
+                text: 'Точка на небесній сфері, розташована прямо над головою спостерігача. Кутова відстань від горизонту до зеніту дорівнює 90°.'
+            },
+            Z_prime: {
+                title: "Z' — Надір",
+                text: 'Точка, діаметрально протилежна зеніту, розташована прямо під ногами спостерігача.'
+            },
+            P_N: {
+                title: 'Pₙ — Північний полюс світу',
+                text: 'Нерухома точка, навколо якої відбувається видимий добовий рух зір. Знаходиться поблизу Полярної зорі. Висота полюса над горизонтом дорівнює географічній широті спостерігача φ.'
+            },
+            P_S: {
+                title: 'Pₛ — Південний полюс світу',
+                text: 'Точка, діаметрально протилежна Pₙ. Для спостерігачів Північної півкулі знаходиться під горизонтом.'
+            },
+            N: {
+                title: 'N — Точка півночі',
+                text: 'Точка перетину небесного меридіана з лінією горизонту, найближча до північного полюса світу Pₙ.'
+            },
+            S: {
+                title: 'S — Точка півдня',
+                text: 'Точка перетину небесного меридіана з горизонтом, найближча до Pₛ. Верхня кульмінація зір відбувається в напрямку точки S.'
+            },
+            E: {
+                title: 'E — Точка сходу',
+                text: 'Точка горизонту, де перетинаються площини горизонту та небесного екватора (на сході). Тут сходять зорі з нульовим схиленням.'
+            },
+            W: {
+                title: 'W — Точка заходу',
+                text: 'Точка горизонту, де перетинаються площини горизонту та небесного екватора (на заході). Тут заходять зорі з нульовим схиленням.'
+            },
+            Q: {
+                title: 'Q — Точка верхньої кульмінації',
+                text: 'Точка перетину небесного екватора з меридіаном над горизонтом. Тут небесний екватор досягає найбільшої висоти h = 90° − φ.'
+            },
+            Q_prime: {
+                title: "Q' — Точка нижньої кульмінації",
+                text: 'Точка перетину небесного екватора з меридіаном під горизонтом, діаметрально протилежна Q.'
+            },
+            O: {
+                title: 'O — Центр небесної сфери',
+                text: 'Точка, де знаходиться спостерігач. Через неї проходять вісь світу та прямовисна лінія.'
+            },
+            M: {
+                title: 'M — Світило (зоря)',
+                text: 'Зоря або інший небесний об\'єкт. У видимому добовому русі описує добову паралель — мале коло, паралельне небесному екватору.'
+            },
+            vertical: {
+                title: 'Прямовисна лінія (ZOZ\')',
+                text: 'Вертикальна пряма, що з\'єднує зеніт Z і надір Z\' через центр сфери O. Перпендикулярна до площини математичного горизонту.'
+            },
+            axis: {
+                title: 'Вісь світу (PₙOPₛ)',
+                text: 'Пряма, навколо якої обертається небесна сфера. Нахил осі до площини горизонту дорівнює широті спостерігача φ.'
+            },
+            meridian: {
+                title: 'Небесний меридіан',
+                text: 'Велике коло, що проходить через зеніт Z, надір Z\' та обидва полюси світу Pₙ і Pₛ. Ділить сферу на східну та західну півсфери.'
+            },
+            equator: {
+                title: 'Небесний екватор',
+                text: 'Велике коло, перпендикулярне до осі світу. Ділить небесну сферу на північну та південну півсфери. Проходить через точки сходу E і заходу W.'
+            },
+            horizon_circle: {
+                title: 'Математичний горизонт',
+                text: 'Велике коло, перпендикулярне до прямовисної лінії ZZ\'. Ділить небесну сферу на видиму та невидиму частини. Проходить через N, S, E, W.'
+            },
+            parallel: {
+                title: 'Добова паралель M',
+                text: 'Мале коло, паралельне небесному екватору, яке описує світило M у видимому добовому русі навколо осі світу протягом доби.'
+            },
+            celestial_sphere: {
+                title: 'Небесна сфера',
+                text: 'Уявна допоміжна сфера довільного радіуса з центром у точці спостереження O, на яку проектуються положення всіх світил. Служить базою для вимірювання небесних координат.'
+            }
+        };
 
-    // ==================== SCENE SETUP ====================
-    const scene = new THREE.Scene();
-    const container = document.getElementById('canvas-container');
-    const camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 500);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x050510, 1);
-    container.appendChild(renderer.domElement);
+        // ==================== SCENE SETUP ====================
+        const scene = new THREE.Scene();
+        const container = document.getElementById('canvas-container');
+        const camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 500);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x050510, 1);
+        container.appendChild(renderer.domElement);
 
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    camera.position.set(20, 14, 24);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.06;
-    controls.minDistance = 10;
-    controls.maxDistance = 60;
+        // Lights for 3D depth and sphere shading
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+        scene.add(ambientLight);
+        const dirLight1 = new THREE.DirectionalLight(0xb0d8ff, 0.7);
+        dirLight1.position.set(25, 35, 25);
+        scene.add(dirLight1);
+        const dirLight2 = new THREE.DirectionalLight(0x4466aa, 0.45);
+        dirLight2.position.set(-25, -20, -25);
+        scene.add(dirLight2);
 
-    // ==================== HELPER FUNCTIONS ====================
-    function tagMaterial(mat, defaultOp, highlightOp) {
-        mat.transparent = true;
-        mat.depthWrite = false;
-        mat.opacity = defaultOp;
-        mat._defaultOpacity = defaultOp;
-        mat._targetOpacity = defaultOp;
-        mat._highlightOpacity = highlightOp !== undefined ? highlightOp : 1.0;
-    }
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        camera.position.set(20, 14, 24);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.06;
+        controls.minDistance = 10;
+        controls.maxDistance = 60;
 
-    function createGreatCircle(normal, radius, color, opacity) {
-        const n = normal.clone().normalize();
-        let ref = new THREE.Vector3(0, 1, 0);
-        if (Math.abs(n.dot(ref)) > 0.99) ref.set(1, 0, 0);
-        const u = new THREE.Vector3().crossVectors(n, ref).normalize();
-        const v = new THREE.Vector3().crossVectors(n, u).normalize();
-        const pts = [];
-        const seg = 128;
-        for (let i = 0; i <= seg; i++) {
-            const a = (i / seg) * Math.PI * 2;
-            pts.push(new THREE.Vector3(
-                (u.x * Math.cos(a) + v.x * Math.sin(a)) * radius,
-                (u.y * Math.cos(a) + v.y * Math.sin(a)) * radius,
-                (u.z * Math.cos(a) + v.z * Math.sin(a)) * radius
-            ));
-        }
-        const geo = new THREE.BufferGeometry().setFromPoints(pts);
-        const mat = new THREE.LineBasicMaterial({ color });
-        tagMaterial(mat, opacity, 1.0);
-        return new THREE.Line(geo, mat);
-    }
-
-    function createSmallCircle(center, normal, circleRadius, color, opacity) {
-        const n = normal.clone().normalize();
-        let ref = new THREE.Vector3(0, 1, 0);
-        if (Math.abs(n.dot(ref)) > 0.99) ref.set(1, 0, 0);
-        const u = new THREE.Vector3().crossVectors(n, ref).normalize();
-        const v = new THREE.Vector3().crossVectors(n, u).normalize();
-        const pts = [];
-        const seg = 128;
-        for (let i = 0; i <= seg; i++) {
-            const a = (i / seg) * Math.PI * 2;
-            pts.push(new THREE.Vector3(
-                center.x + (u.x * Math.cos(a) + v.x * Math.sin(a)) * circleRadius,
-                center.y + (u.y * Math.cos(a) + v.y * Math.sin(a)) * circleRadius,
-                center.z + (u.z * Math.cos(a) + v.z * Math.sin(a)) * circleRadius
-            ));
-        }
-        const geo = new THREE.BufferGeometry().setFromPoints(pts);
-        const mat = new THREE.LineBasicMaterial({ color });
-        tagMaterial(mat, opacity, 1.0);
-        return new THREE.Line(geo, mat);
-    }
-
-    function createThickLine(p1, p2, color, thickness, opacity) {
-        const dir = new THREE.Vector3().subVectors(p2, p1);
-        const len = dir.length();
-        const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
-        const geo = new THREE.CylinderGeometry(thickness, thickness, len, 8, 1);
-        const mat = new THREE.MeshBasicMaterial({ color });
-        tagMaterial(mat, opacity, 1.0);
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.copy(mid);
-        const yAxis = new THREE.Vector3(0, 1, 0);
-        mesh.quaternion.setFromUnitVectors(yAxis, dir.normalize());
-        return mesh;
-    }
-
-    function createLabelSprite(text, subText, colorStr) {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 200;
-        canvas.height = 100;
-        ctx.clearRect(0, 0, 200, 100);
-        ctx.fillStyle = colorStr;
-        ctx.strokeStyle = 'rgba(0,0,0,0.9)';
-        ctx.lineWidth = 4;
-        ctx.textBaseline = 'middle';
-
-        if (subText) {
-            ctx.textAlign = 'left';
-            ctx.font = 'bold 54px Arial, sans-serif';
-            const mw = ctx.measureText(text).width;
-            const sx = (200 - mw - 28) / 2;
-            ctx.strokeText(text, sx, 44);
-            ctx.fillText(text, sx, 44);
-            ctx.font = 'bold 34px Arial, sans-serif';
-            ctx.strokeText(subText, sx + mw + 2, 60);
-            ctx.fillText(subText, sx + mw + 2, 60);
-        } else {
-            ctx.textAlign = 'center';
-            ctx.font = 'bold 54px Arial, sans-serif';
-            ctx.strokeText(text, 100, 50);
-            ctx.fillText(text, 100, 50);
+        // ==================== HELPER FUNCTIONS ====================
+        function tagMaterial(mat, defaultOp, highlightOp) {
+            mat.transparent = true;
+            mat.depthWrite = false;
+            mat.opacity = defaultOp;
+            mat._defaultOpacity = defaultOp;
+            mat._targetOpacity = defaultOp;
+            mat._highlightOpacity = highlightOp !== undefined ? highlightOp : 1.0;
         }
 
-        const texture = new THREE.CanvasTexture(canvas);
-        const mat = new THREE.SpriteMaterial({ map: texture, depthTest: false, sizeAttenuation: true });
-        tagMaterial(mat, 0.92, 1.0);
-        const sprite = new THREE.Sprite(mat);
-        sprite.scale.set(2.8, 1.4, 1);
-        return sprite;
-    }
-
-    function createPointGroup(elementId, position, color, labelText, labelSub, size) {
-        const group = new THREE.Group();
-        const sz = size || 0.35;
-
-        // Core dot
-        const coreGeo = new THREE.SphereGeometry(sz, 16, 16);
-        const coreMat = new THREE.MeshBasicMaterial({ color });
-        tagMaterial(coreMat, 0.95, 1.0);
-        const core = new THREE.Mesh(coreGeo, coreMat);
-        core.userData.elementId = elementId;
-        group.add(core);
-
-        // Glow
-        const glowGeo = new THREE.SphereGeometry(sz * 2.5, 16, 16);
-        const glowMat = new THREE.MeshBasicMaterial({ color });
-        tagMaterial(glowMat, 0.15, 0.45);
-        const glow = new THREE.Mesh(glowGeo, glowMat);
-        glow.userData.elementId = elementId;
-        group.add(glow);
-
-        // Label
-        const colorStr = '#' + new THREE.Color(color).getHexString();
-        const label = createLabelSprite(labelText, labelSub, colorStr);
-        const outDir = position.length() > 0.01
-            ? position.clone().normalize().multiplyScalar(2.2)
-            : new THREE.Vector3(1.5, -1, 1.5);
-        label.position.copy(outDir);
-        label.userData.elementId = elementId;
-        group.add(label);
-
-        group.position.copy(position);
-        return group;
-    }
-
-    // ==================== STARFIELD ====================
-    (function buildStarfield() {
-        const geo = new THREE.BufferGeometry();
-        const pos = [], cols = [];
-        for (let i = 0; i < 2500; i++) {
-            const r = 70 + Math.random() * 30;
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.acos(2 * Math.random() - 1);
-            pos.push(r * Math.sin(phi) * Math.cos(theta),
-                     r * Math.sin(phi) * Math.sin(theta),
-                     r * Math.cos(phi));
-            const b = 0.5 + Math.random() * 0.5;
-            cols.push(b, b, b * (0.9 + Math.random() * 0.1));
+        function createGreatCircle(normal, radius, color, opacity) {
+            const n = normal.clone().normalize();
+            let ref = new THREE.Vector3(0, 1, 0);
+            if (Math.abs(n.dot(ref)) > 0.99) ref.set(1, 0, 0);
+            const u = new THREE.Vector3().crossVectors(n, ref).normalize();
+            const v = new THREE.Vector3().crossVectors(n, u).normalize();
+            const pts = [];
+            const seg = 128;
+            for (let i = 0; i <= seg; i++) {
+                const a = (i / seg) * Math.PI * 2;
+                pts.push(new THREE.Vector3(
+                    (u.x * Math.cos(a) + v.x * Math.sin(a)) * radius,
+                    (u.y * Math.cos(a) + v.y * Math.sin(a)) * radius,
+                    (u.z * Math.cos(a) + v.z * Math.sin(a)) * radius
+                ));
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            const mat = new THREE.LineBasicMaterial({ color });
+            tagMaterial(mat, opacity, 1.0);
+            return new THREE.Line(geo, mat);
         }
-        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-        geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
-        const mat = new THREE.PointsMaterial({ size: 0.25, vertexColors: true, transparent: true, opacity: 0.55, depthWrite: false });
-        mat._isBackground = true;
-        scene.add(new THREE.Points(geo, mat));
-    })();
 
-    // ==================== CELESTIAL SPHERE WIREFRAME ====================
-    const sphereWireGeo = new THREE.SphereGeometry(R, 24, 24);
-    const sphereWireMat = new THREE.MeshBasicMaterial({ color: 0x223344, wireframe: true });
-    tagMaterial(sphereWireMat, 0.1, 0.15);
-    sphereWireMat._isBackground = true;
-    const sphereWire = new THREE.Mesh(sphereWireGeo, sphereWireMat);
-    scene.add(sphereWire);
+        function createSmallCircle(center, normal, circleRadius, color, opacity) {
+            const n = normal.clone().normalize();
+            let ref = new THREE.Vector3(0, 1, 0);
+            if (Math.abs(n.dot(ref)) > 0.99) ref.set(1, 0, 0);
+            const u = new THREE.Vector3().crossVectors(n, ref).normalize();
+            const v = new THREE.Vector3().crossVectors(n, u).normalize();
+            const pts = [];
+            const seg = 128;
+            for (let i = 0; i <= seg; i++) {
+                const a = (i / seg) * Math.PI * 2;
+                pts.push(new THREE.Vector3(
+                    center.x + (u.x * Math.cos(a) + v.x * Math.sin(a)) * circleRadius,
+                    center.y + (u.y * Math.cos(a) + v.y * Math.sin(a)) * circleRadius,
+                    center.z + (u.z * Math.cos(a) + v.z * Math.sin(a)) * circleRadius
+                ));
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            const mat = new THREE.LineBasicMaterial({ color });
+            tagMaterial(mat, opacity, 1.0);
+            return new THREE.Line(geo, mat);
+        }
 
-    // ==================== HORIZON DISC ====================
-    const discGeo = new THREE.CircleGeometry(R * 1.05, 64);
-    const discMat = new THREE.MeshBasicMaterial({ color: 0x665588, side: THREE.DoubleSide });
-    tagMaterial(discMat, 0.08, 0.12);
-    discMat._isBackground = true;
-    const disc = new THREE.Mesh(discGeo, discMat);
-    disc.rotation.x = -Math.PI / 2;
-    scene.add(disc);
+        function createThickLine(p1, p2, color, thickness, opacity) {
+            const dir = new THREE.Vector3().subVectors(p2, p1);
+            const len = dir.length();
+            const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+            const geo = new THREE.CylinderGeometry(thickness, thickness, len, 8, 1);
+            const mat = new THREE.MeshBasicMaterial({ color });
+            tagMaterial(mat, opacity, 1.0);
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(mid);
+            const yAxis = new THREE.Vector3(0, 1, 0);
+            mesh.quaternion.setFromUnitVectors(yAxis, dir.normalize());
+            return mesh;
+        }
 
-    // ==================== STATIC ELEMENTS ====================
-    // --- Points ---
-    const posZ = new THREE.Vector3(0, R, 0);
-    const posZp = new THREE.Vector3(0, -R, 0);
-    const posN = new THREE.Vector3(0, 0, -R);
-    const posS = new THREE.Vector3(0, 0, R);
-    const posE = new THREE.Vector3(R, 0, 0);
-    const posW = new THREE.Vector3(-R, 0, 0);
-    const posO = new THREE.Vector3(0, 0, 0);
+        function createLabelSprite(text, subText, colorStr) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 200;
+            canvas.height = 100;
+            ctx.clearRect(0, 0, 200, 100);
+            ctx.fillStyle = colorStr;
+            ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+            ctx.lineWidth = 4;
+            ctx.textBaseline = 'middle';
 
-    const pZ = createPointGroup('Z', posZ, 0xff4444, 'Z', null, 0.4);
-    const pZp = createPointGroup('Z_prime', posZp, 0xff4444, "Z'", null, 0.4);
-    const pN = createPointGroup('N', posN, 0xe050a8, 'N');
-    const pS = createPointGroup('S', posS, 0xe050a8, 'S');
-    const pE = createPointGroup('E', posE, 0xe050a8, 'E');
-    const pW = createPointGroup('W', posW, 0xe050a8, 'W');
-    const pO = createPointGroup('O', posO, 0xaaaaaa, 'O', null, 0.3);
-    [pZ, pZp, pN, pS, pE, pW, pO].forEach(p => scene.add(p));
+            if (subText) {
+                ctx.textAlign = 'left';
+                ctx.font = 'bold 54px Arial, sans-serif';
+                const mw = ctx.measureText(text).width;
+                const sx = (200 - mw - 28) / 2;
+                ctx.strokeText(text, sx, 44);
+                ctx.fillText(text, sx, 44);
+                ctx.font = 'bold 34px Arial, sans-serif';
+                ctx.strokeText(subText, sx + mw + 2, 60);
+                ctx.fillText(subText, sx + mw + 2, 60);
+            } else {
+                ctx.textAlign = 'center';
+                ctx.font = 'bold 54px Arial, sans-serif';
+                ctx.strokeText(text, 100, 50);
+                ctx.fillText(text, 100, 50);
+            }
 
-    // --- Vertical line (ZZ') ---
-    const vertLine = createThickLine(
-        new THREE.Vector3(0, -R * 1.15, 0),
-        new THREE.Vector3(0, R * 1.15, 0),
-        0xff4444, 0.05, 0.65
-    );
-    vertLine.userData.elementId = 'vertical';
-    scene.add(vertLine);
+            const texture = new THREE.CanvasTexture(canvas);
+            const mat = new THREE.SpriteMaterial({ map: texture, depthTest: false, sizeAttenuation: true });
+            tagMaterial(mat, 0.92, 1.0);
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(2.8, 1.4, 1);
+            return sprite;
+        }
 
-    // --- Celestial meridian (great circle in YZ plane, normal = X) ---
-    const meridianCircle = createGreatCircle(new THREE.Vector3(1, 0, 0), R, 0xff7744, 0.55);
-    meridianCircle.userData.elementId = 'meridian';
-    scene.add(meridianCircle);
+        function createPointGroup(elementId, position, color, labelText, labelSub, size) {
+            const group = new THREE.Group();
+            const sz = size || 0.35;
 
-    // --- Horizon circle (great circle in XZ plane, normal = Y) ---
-    const horizonCircle = createGreatCircle(new THREE.Vector3(0, 1, 0), R, 0xe050a8, 0.55);
-    horizonCircle.userData.elementId = 'horizon_circle';
-    scene.add(horizonCircle);
+            // Core dot
+            const coreGeo = new THREE.SphereGeometry(sz, 16, 16);
+            const coreMat = new THREE.MeshBasicMaterial({ color });
+            tagMaterial(coreMat, 0.95, 1.0);
+            const core = new THREE.Mesh(coreGeo, coreMat);
+            core.userData.elementId = elementId;
+            group.add(core);
 
-    // ==================== DYNAMIC ELEMENTS ====================
-    const dynamicGroup = new THREE.Group();
-    scene.add(dynamicGroup);
+            // Glow
+            const glowGeo = new THREE.SphereGeometry(sz * 2.5, 16, 16);
+            const glowMat = new THREE.MeshBasicMaterial({ color });
+            tagMaterial(glowMat, 0.15, 0.45);
+            const glow = new THREE.Mesh(glowGeo, glowMat);
+            glow.userData.elementId = elementId;
+            group.add(glow);
 
-    function computeStarPosition(phi, delta, h) {
-        const eqX = new THREE.Vector3(1, 0, 0);
-        const eqY = new THREE.Vector3(0, Math.cos(phi), Math.sin(phi));
-        const w = new THREE.Vector3(0, Math.sin(phi), -Math.cos(phi));
-        return new THREE.Vector3()
-            .addScaledVector(eqX, -Math.sin(h) * Math.cos(delta) * R)
-            .addScaledVector(eqY, Math.cos(h) * Math.cos(delta) * R)
-            .addScaledVector(w, Math.sin(delta) * R);
-    }
+            // Label
+            const colorStr = '#' + new THREE.Color(color).getHexString();
+            const label = createLabelSprite(labelText, labelSub, colorStr);
+            const outDir = position.length() > 0.01
+                ? position.clone().normalize().multiplyScalar(2.2)
+                : new THREE.Vector3(1.5, -1, 1.5);
+            label.position.copy(outDir);
+            label.userData.elementId = elementId;
+            group.add(label);
 
-    function buildDynamicElements() {
-        // Dispose old
-        while (dynamicGroup.children.length > 0) {
-            const child = dynamicGroup.children[0];
-            dynamicGroup.remove(child);
-            child.traverse(c => {
-                if (c.geometry) c.geometry.dispose();
-                if (c.material) {
-                    if (c.material.map) c.material.map.dispose();
-                    c.material.dispose();
+            group.position.copy(position);
+            return group;
+        }
+
+        // ==================== STARFIELD ====================
+        (function buildStarfield() {
+            const geo = new THREE.BufferGeometry();
+            const pos = [], cols = [];
+            for (let i = 0; i < 2500; i++) {
+                const r = 70 + Math.random() * 30;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                pos.push(r * Math.sin(phi) * Math.cos(theta),
+                    r * Math.sin(phi) * Math.sin(theta),
+                    r * Math.cos(phi));
+                const b = 0.5 + Math.random() * 0.5;
+                cols.push(b, b, b * (0.9 + Math.random() * 0.1));
+            }
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+            geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+            const mat = new THREE.PointsMaterial({ size: 0.25, vertexColors: true, transparent: true, opacity: 0.55, depthWrite: false });
+            mat._isBackground = true;
+            scene.add(new THREE.Points(geo, mat));
+        })();
+
+        // ==================== CELESTIAL SPHERE ====================
+        const celestialSphereGroup = new THREE.Group();
+        celestialSphereGroup.userData.elementId = 'celestial_sphere';
+
+        // 1. Translucent sphere shell
+        const sphereSurfaceGeo = new THREE.SphereGeometry(R, 64, 48);
+        const sphereSurfaceMat = new THREE.MeshPhongMaterial({
+            color: 0x184d85,
+            emissive: 0x071b30,
+            specular: 0x64b5f6,
+            shininess: 35,
+            transparent: true,
+            opacity: 0.18,
+            depthWrite: false,
+            side: THREE.DoubleSide
+        });
+        tagMaterial(sphereSurfaceMat, 0.18, 0.38);
+        sphereSurfaceMat._isBackground = true;
+        const sphereSurface = new THREE.Mesh(sphereSurfaceGeo, sphereSurfaceMat);
+        sphereSurface.userData.elementId = 'celestial_sphere';
+        celestialSphereGroup.add(sphereSurface);
+
+        // 2. Clear coordinate grid (parallels and meridians)
+        const sphereGridMat = new THREE.LineBasicMaterial({
+            color: 0x38bdf8,
+            transparent: true,
+            opacity: 0.32,
+            depthWrite: false
+        });
+        tagMaterial(sphereGridMat, 0.32, 0.70);
+        sphereGridMat._isBackground = true;
+
+        // Parallels (altitude circles every 15°)
+        const latAngles = [-75, -60, -45, -30, -15, 15, 30, 45, 60, 75];
+        latAngles.forEach(deg => {
+            const phi = THREE.MathUtils.degToRad(deg);
+            const r = R * Math.cos(phi);
+            const y = R * Math.sin(phi);
+            const pts = [];
+            for (let i = 0; i <= 64; i++) {
+                const a = (i / 64) * Math.PI * 2;
+                pts.push(new THREE.Vector3(r * Math.cos(a), y, r * Math.sin(a)));
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            const line = new THREE.Line(geo, sphereGridMat);
+            line.userData.elementId = 'celestial_sphere';
+            celestialSphereGroup.add(line);
+        });
+
+        // Meridians (vertical circles through Z and Z' every 30°)
+        for (let i = 0; i < 12; i++) {
+            const a = (i / 12) * Math.PI * 2;
+            const pts = [];
+            for (let j = 0; j <= 64; j++) {
+                const p = (j / 64) * Math.PI * 2;
+                pts.push(new THREE.Vector3(
+                    R * Math.sin(p) * Math.cos(a),
+                    R * Math.cos(p),
+                    R * Math.sin(p) * Math.sin(a)
+                ));
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            const line = new THREE.Line(geo, sphereGridMat);
+            line.userData.elementId = 'celestial_sphere';
+            celestialSphereGroup.add(line);
+        }
+
+        scene.add(celestialSphereGroup);
+
+        // ==================== HORIZON DISC ====================
+        const discGeo = new THREE.CircleGeometry(R * 1.02, 64);
+        const discMat = new THREE.MeshBasicMaterial({ color: 0x50486c, side: THREE.DoubleSide });
+        tagMaterial(discMat, 0.12, 0.22);
+        discMat._isBackground = true;
+        const disc = new THREE.Mesh(discGeo, discMat);
+        disc.rotation.x = -Math.PI / 2;
+        scene.add(disc);
+
+        // ==================== STATIC ELEMENTS ====================
+        // --- Points ---
+        const posZ = new THREE.Vector3(0, R, 0);
+        const posZp = new THREE.Vector3(0, -R, 0);
+        const posN = new THREE.Vector3(0, 0, -R);
+        const posS = new THREE.Vector3(0, 0, R);
+        const posE = new THREE.Vector3(R, 0, 0);
+        const posW = new THREE.Vector3(-R, 0, 0);
+        const posO = new THREE.Vector3(0, 0, 0);
+
+        const pZ = createPointGroup('Z', posZ, 0xff4444, 'Z', null, 0.4);
+        const pZp = createPointGroup('Z_prime', posZp, 0xff4444, "Z'", null, 0.4);
+        const pN = createPointGroup('N', posN, 0xe050a8, 'N');
+        const pS = createPointGroup('S', posS, 0xe050a8, 'S');
+        const pE = createPointGroup('E', posE, 0xe050a8, 'E');
+        const pW = createPointGroup('W', posW, 0xe050a8, 'W');
+        const pO = createPointGroup('O', posO, 0xaaaaaa, 'O', null, 0.3);
+        [pZ, pZp, pN, pS, pE, pW, pO].forEach(p => scene.add(p));
+
+        // --- Vertical line (ZZ') ---
+        const vertLine = createThickLine(
+            new THREE.Vector3(0, -R * 1.15, 0),
+            new THREE.Vector3(0, R * 1.15, 0),
+            0xff4444, 0.05, 0.65
+        );
+        vertLine.userData.elementId = 'vertical';
+        scene.add(vertLine);
+
+        // --- Celestial meridian (great circle in YZ plane, normal = X) ---
+        const meridianCircle = createGreatCircle(new THREE.Vector3(1, 0, 0), R, 0xff7744, 0.55);
+        meridianCircle.userData.elementId = 'meridian';
+        scene.add(meridianCircle);
+
+        // --- Horizon circle (great circle in XZ plane, normal = Y) ---
+        const horizonCircle = createGreatCircle(new THREE.Vector3(0, 1, 0), R, 0xe050a8, 0.55);
+        horizonCircle.userData.elementId = 'horizon_circle';
+        scene.add(horizonCircle);
+
+        // ==================== DYNAMIC ELEMENTS ====================
+        const dynamicGroup = new THREE.Group();
+        scene.add(dynamicGroup);
+
+        function computeStarPosition(phi, delta, h) {
+            const eqX = new THREE.Vector3(1, 0, 0);
+            const eqY = new THREE.Vector3(0, Math.cos(phi), Math.sin(phi));
+            const w = new THREE.Vector3(0, Math.sin(phi), -Math.cos(phi));
+            return new THREE.Vector3()
+                .addScaledVector(eqX, -Math.sin(h) * Math.cos(delta) * R)
+                .addScaledVector(eqY, Math.cos(h) * Math.cos(delta) * R)
+                .addScaledVector(w, Math.sin(delta) * R);
+        }
+
+        function buildDynamicElements() {
+            // Dispose old
+            while (dynamicGroup.children.length > 0) {
+                const child = dynamicGroup.children[0];
+                dynamicGroup.remove(child);
+                child.traverse(c => {
+                    if (c.geometry) c.geometry.dispose();
+                    if (c.material) {
+                        if (c.material.map) c.material.map.dispose();
+                        c.material.dispose();
+                    }
+                });
+            }
+
+            const phi = THREE.MathUtils.degToRad(latitude);
+            const delta = THREE.MathUtils.degToRad(STAR_DEC);
+            const h = THREE.MathUtils.degToRad(STAR_HA);
+            const worldAxisDir = new THREE.Vector3(0, Math.sin(phi), -Math.cos(phi));
+
+            // Dynamic positions
+            const posPN = new THREE.Vector3(0, R * Math.sin(phi), -R * Math.cos(phi));
+            const posPS = new THREE.Vector3(0, -R * Math.sin(phi), R * Math.cos(phi));
+            const posQ = new THREE.Vector3(0, R * Math.cos(phi), R * Math.sin(phi));
+            const posQp = new THREE.Vector3(0, -R * Math.cos(phi), -R * Math.sin(phi));
+            const posM = computeStarPosition(phi, delta, h);
+
+            // --- Points ---
+            const dPN = createPointGroup('P_N', posPN, 0x00bbff, 'P', 'N', 0.4);
+            const dPS = createPointGroup('P_S', posPS, 0x00bbff, 'P', 'S', 0.4);
+            const dQ = createPointGroup('Q', posQ, 0x00cc66, 'Q');
+            const dQp = createPointGroup('Q_prime', posQp, 0x00cc66, "Q'");
+            const dM = createPointGroup('M', posM, 0xffd700, 'M', null, 0.45);
+            dM.userData.isStar = true;
+            [dPN, dPS, dQ, dQp, dM].forEach(p => dynamicGroup.add(p));
+
+            // --- World axis line ---
+            const axisExt = 1.15;
+            const axisLine = createThickLine(
+                posPS.clone().normalize().multiplyScalar(R * axisExt),
+                posPN.clone().normalize().multiplyScalar(R * axisExt),
+                0x00bbff, 0.05, 0.6
+            );
+            axisLine.userData.elementId = 'axis';
+            dynamicGroup.add(axisLine);
+
+            // --- Celestial equator ---
+            const equatorCircle = createGreatCircle(worldAxisDir, R, 0x00cc66, 0.6);
+            equatorCircle.userData.elementId = 'equator';
+            dynamicGroup.add(equatorCircle);
+
+            // --- Daily parallel of M ---
+            const parallelCenter = worldAxisDir.clone().multiplyScalar(R * Math.sin(delta));
+            const parallelRadius = R * Math.cos(delta);
+            const parallelCircle = createSmallCircle(parallelCenter, worldAxisDir, parallelRadius, 0x5599ff, 0.45);
+            parallelCircle.userData.elementId = 'parallel';
+            dynamicGroup.add(parallelCircle);
+
+            // Re-apply highlight if active
+            if (selectedId) applyHighlight(selectedId);
+        }
+
+        // ==================== HIGHLIGHT SYSTEM ====================
+        let selectedId = null;
+
+        function applyHighlight(id) {
+            scene.traverse(child => {
+                if (!child.material || child.material._defaultOpacity === undefined) return;
+
+                let match = (child.userData && child.userData.elementId === id);
+                if (!match) {
+                    let p = child.parent;
+                    while (p && p !== scene) {
+                        if (p.userData && p.userData.elementId === id) { match = true; break; }
+                        p = p.parent;
+                    }
+                }
+
+                if (match) {
+                    child.material._targetOpacity = child.material._highlightOpacity;
+                } else if (child.material._isBackground) {
+                    child.material._targetOpacity = child.material._defaultOpacity * 0.55;
+                } else {
+                    child.material._targetOpacity = 0.05;
                 }
             });
         }
 
-        const phi = THREE.MathUtils.degToRad(latitude);
-        const delta = THREE.MathUtils.degToRad(STAR_DEC);
-        const h = THREE.MathUtils.degToRad(STAR_HA);
-        const worldAxisDir = new THREE.Vector3(0, Math.sin(phi), -Math.cos(phi));
+        function restoreAll() {
+            scene.traverse(child => {
+                if (child.material && child.material._defaultOpacity !== undefined) {
+                    child.material._targetOpacity = child.material._defaultOpacity;
+                }
+            });
+        }
 
-        // Dynamic positions
-        const posPN = new THREE.Vector3(0, R * Math.sin(phi), -R * Math.cos(phi));
-        const posPS = new THREE.Vector3(0, -R * Math.sin(phi), R * Math.cos(phi));
-        const posQ = new THREE.Vector3(0, R * Math.cos(phi), R * Math.sin(phi));
-        const posQp = new THREE.Vector3(0, -R * Math.cos(phi), -R * Math.sin(phi));
-        const posM = computeStarPosition(phi, delta, h);
+        function selectElement(id) {
+            const descBox = document.getElementById('description-box');
+            const descTitle = document.getElementById('desc-title');
+            const descText = document.getElementById('desc-text');
 
-        // --- Points ---
-        const dPN = createPointGroup('P_N', posPN, 0x00bbff, 'P', 'N', 0.4);
-        const dPS = createPointGroup('P_S', posPS, 0x00bbff, 'P', 'S', 0.4);
-        const dQ = createPointGroup('Q', posQ, 0x00cc66, 'Q');
-        const dQp = createPointGroup('Q_prime', posQp, 0x00cc66, "Q'");
-        const dM = createPointGroup('M', posM, 0xffd700, 'M', null, 0.45);
-        dM.userData.isStar = true;
-        [dPN, dPS, dQ, dQp, dM].forEach(p => dynamicGroup.add(p));
+            // Update panel items
+            document.querySelectorAll('.item').forEach(item => item.classList.remove('active'));
 
-        // --- World axis line ---
-        const axisExt = 1.15;
-        const axisLine = createThickLine(
-            posPS.clone().normalize().multiplyScalar(R * axisExt),
-            posPN.clone().normalize().multiplyScalar(R * axisExt),
-            0x00bbff, 0.05, 0.6
-        );
-        axisLine.userData.elementId = 'axis';
-        dynamicGroup.add(axisLine);
-
-        // --- Celestial equator ---
-        const equatorCircle = createGreatCircle(worldAxisDir, R, 0x00cc66, 0.6);
-        equatorCircle.userData.elementId = 'equator';
-        dynamicGroup.add(equatorCircle);
-
-        // --- Daily parallel of M ---
-        const parallelCenter = worldAxisDir.clone().multiplyScalar(R * Math.sin(delta));
-        const parallelRadius = R * Math.cos(delta);
-        const parallelCircle = createSmallCircle(parallelCenter, worldAxisDir, parallelRadius, 0x5599ff, 0.45);
-        parallelCircle.userData.elementId = 'parallel';
-        dynamicGroup.add(parallelCircle);
-
-        // Re-apply highlight if active
-        if (selectedId) applyHighlight(selectedId);
-    }
-
-    // ==================== HIGHLIGHT SYSTEM ====================
-    let selectedId = null;
-
-    function applyHighlight(id) {
-        scene.traverse(child => {
-            if (!child.material || child.material._defaultOpacity === undefined) return;
-            if (child.material._isBackground) {
-                child.material._targetOpacity = child.material._defaultOpacity * 0.25;
-            } else if (child.userData.elementId === id) {
-                child.material._targetOpacity = child.material._highlightOpacity;
+            if (selectedId === id) {
+                // Deselect
+                selectedId = null;
+                restoreAll();
+                descBox.classList.remove('visible');
+                descTitle.textContent = 'Оберіть елемент';
+                descText.textContent = 'Натисніть на будь-який елемент у списку, щоб побачити його опис та підсвітити на 3D-моделі.';
             } else {
-                // Check parent groups
-                let match = false;
-                let p = child.parent;
-                while (p) {
-                    if (p.userData && p.userData.elementId === id) { match = true; break; }
-                    p = p.parent;
+                selectedId = id;
+                applyHighlight(id);
+                // Highlight panel item
+                const activeItem = document.querySelector(`.item[data-id="${id}"]`);
+                if (activeItem) activeItem.classList.add('active');
+                // Show description
+                const desc = descriptions[id];
+                if (desc) {
+                    descTitle.textContent = desc.title;
+                    descText.textContent = desc.text;
+                    descBox.classList.add('visible');
                 }
-                // Check children that were created via createPointGroup
-                if (!match) {
-                    child.material._targetOpacity = 0.05;
-                } else {
-                    child.material._targetOpacity = child.material._highlightOpacity;
-                }
-            }
-        });
-    }
-
-    function restoreAll() {
-        scene.traverse(child => {
-            if (child.material && child.material._defaultOpacity !== undefined) {
-                child.material._targetOpacity = child.material._defaultOpacity;
-            }
-        });
-    }
-
-    function selectElement(id) {
-        const descBox = document.getElementById('description-box');
-        const descTitle = document.getElementById('desc-title');
-        const descText = document.getElementById('desc-text');
-
-        // Update panel items
-        document.querySelectorAll('.item').forEach(item => item.classList.remove('active'));
-
-        if (selectedId === id) {
-            // Deselect
-            selectedId = null;
-            restoreAll();
-            descBox.classList.remove('visible');
-            descTitle.textContent = 'Оберіть елемент';
-            descText.textContent = 'Натисніть на будь-який елемент у списку, щоб побачити його опис та підсвітити на 3D-моделі.';
-        } else {
-            selectedId = id;
-            applyHighlight(id);
-            // Highlight panel item
-            const activeItem = document.querySelector(`.item[data-id="${id}"]`);
-            if (activeItem) activeItem.classList.add('active');
-            // Show description
-            const desc = descriptions[id];
-            if (desc) {
-                descTitle.textContent = desc.title;
-                descText.textContent = desc.text;
-                descBox.classList.add('visible');
             }
         }
-    }
 
-    // ==================== PANEL EVENT LISTENERS ====================
-    document.querySelectorAll('.item').forEach(item => {
-        item.addEventListener('click', () => {
-            selectElement(item.dataset.id);
+        // ==================== PANEL EVENT LISTENERS ====================
+        document.querySelectorAll('.item').forEach(item => {
+            item.addEventListener('click', () => {
+                selectElement(item.dataset.id);
+            });
         });
-    });
 
-    // Latitude slider
-    const latSlider = document.getElementById('lat-slider');
-    const latLabel = document.getElementById('lat-val');
-    latSlider.addEventListener('input', () => {
-        latitude = parseFloat(latSlider.value);
-        latLabel.textContent = latitude + '°';
-        buildDynamicElements();
-    });
+        // Latitude slider
+        const latSlider = document.getElementById('lat-slider');
+        const latLabel = document.getElementById('lat-val');
+        latSlider.addEventListener('input', () => {
+            latitude = parseFloat(latSlider.value);
+            latLabel.textContent = latitude + '°';
+            buildDynamicElements();
+        });
 
-    // ==================== ANIMATION LOOP ====================
-    let time = 0;
-    function animate() {
-        requestAnimationFrame(animate);
-        time += 0.016;
+        // Sphere opacity slider
+        const sphereOpSlider = document.getElementById('sphere-op-slider');
+        const sphereOpLabel = document.getElementById('sphere-op-val');
+        if (sphereOpSlider && sphereOpLabel) {
+            sphereOpSlider.addEventListener('input', () => {
+                const ratio = parseFloat(sphereOpSlider.value) / 100;
+                sphereOpLabel.textContent = Math.round(ratio * 100) + '%';
+                sphereSurfaceMat._defaultOpacity = ratio * 0.45;
+                sphereSurfaceMat._highlightOpacity = Math.min(1.0, ratio * 0.85);
+                sphereGridMat._defaultOpacity = ratio * 0.80;
+                sphereGridMat._highlightOpacity = Math.min(1.0, ratio * 1.4);
 
-        // Smooth opacity transitions
-        scene.traverse(child => {
-            if (child.material && child.material._targetOpacity !== undefined) {
-                const diff = child.material._targetOpacity - child.material.opacity;
-                if (Math.abs(diff) > 0.001) {
-                    child.material.opacity += diff * 0.12;
+                if (!selectedId) {
+                    sphereSurfaceMat._targetOpacity = sphereSurfaceMat._defaultOpacity;
+                    sphereGridMat._targetOpacity = sphereGridMat._defaultOpacity;
+                } else if (selectedId === 'celestial_sphere') {
+                    sphereSurfaceMat._targetOpacity = sphereSurfaceMat._highlightOpacity;
+                    sphereGridMat._targetOpacity = sphereGridMat._highlightOpacity;
                 } else {
-                    child.material.opacity = child.material._targetOpacity;
+                    sphereSurfaceMat._targetOpacity = sphereSurfaceMat._defaultOpacity * 0.55;
+                    sphereGridMat._targetOpacity = sphereGridMat._defaultOpacity * 0.55;
                 }
-            }
+            });
+        }
+
+        // ==================== ANIMATION LOOP ====================
+        let time = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.016;
+
+            // Smooth opacity transitions
+            scene.traverse(child => {
+                if (child.material && child.material._targetOpacity !== undefined) {
+                    const diff = child.material._targetOpacity - child.material.opacity;
+                    if (Math.abs(diff) > 0.001) {
+                        child.material.opacity += diff * 0.12;
+                    } else {
+                        child.material.opacity = child.material._targetOpacity;
+                    }
+                }
+            });
+
+            // Star M twinkle
+            dynamicGroup.traverse(child => {
+                if (child.parent && child.parent.userData.isStar && child.type === 'Mesh') {
+                    const base = child.material._targetOpacity;
+                    child.material.opacity = base * (0.8 + 0.2 * Math.sin(time * 3.5));
+                }
+            });
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // ==================== RESIZE ====================
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
         });
 
-        // Star M twinkle
-        dynamicGroup.traverse(child => {
-            if (child.parent && child.parent.userData.isStar && child.type === 'Mesh') {
-                const base = child.material._targetOpacity;
-                child.material.opacity = base * (0.8 + 0.2 * Math.sin(time * 3.5));
-            }
-        });
-
-        controls.update();
-        renderer.render(scene, camera);
-    }
-
-    // ==================== RESIZE ====================
-    window.addEventListener('resize', () => {
-        camera.aspect = container.clientWidth / container.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(container.clientWidth, container.clientHeight);
-    });
-
-    // ==================== INIT ====================
-    buildDynamicElements();
-    animate();
+        // ==================== INIT ====================
+        buildDynamicElements();
+        animate();
     </script>
 </body>
 
