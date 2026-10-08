@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Небесні системи координат</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050510;
+            color: white;
+            font-family: sans-serif;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #ui-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1.5rem;
+            border-radius: 12px;
+            max-width: 350px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 600px) {
+            #ui-panel {
+                top: auto;
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+                max-width: none;
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- UI Overlay -->
+    <div id="ui-panel">
+        <h1 class="text-xl font-bold mb-2">Небесні координати</h1>
+        <p class="text-sm text-gray-300 mb-4">Обертайте сферу мишею/пальцем. Змінюйте широту, щоб побачити взаємозв'язок
+            систем.</p>
+
+        <div class="mb-4">
+            <label for="latitudeSlider" class="block text-sm font-medium mb-1">
+                Широта спостерігача: <span id="latValue" class="text-yellow-400 font-bold text-lg">50°</span>
+            </label>
+            <input type="range" id="latitudeSlider" min="-90" max="90" value="50"
+                class="mt-2 h-2 bg-gray-600 rounded-lg appearance-none">
+            <div class="flex justify-between text-xs text-gray-400 mt-1">
+                <span>Пд. Полюс (-90°)</span>
+                <span>Екватор (0°)</span>
+                <span>Пн. Полюс (90°)</span>
+            </div>
+        </div>
+
+        <div class="space-y-2 text-sm bg-slate-800/50 p-3 rounded-md mb-4 border border-slate-700">
+            <div class="flex justify-between">
+                <span>Висота Полюса світу:</span>
+                <span id="poleAltitude" class="text-blue-400 font-bold">50°</span>
+            </div>
+            <div class="flex justify-between">
+                <span>Кут Екватор-Зеніт:</span>
+                <span id="equatorZenith" class="text-blue-400 font-bold">50°</span>
+            </div>
+            <p class="text-xs text-gray-400 mt-1 italic">Ці кути завжди дорівнюють вашій широті!</p>
+        </div>
+
+        <div>
+            <h2 class="text-sm font-semibold mb-2 text-gray-300 uppercase tracking-wide">Легенда:</h2>
+            <ul class="text-sm space-y-1">
+                <li class="flex items-center"><span class="legend-dot bg-green-500"></span> <b>Горизонтальна:</b>
+                    Горизонт, Зеніт</li>
+                <li class="flex items-center"><span class="legend-dot bg-blue-500"></span> <b>Екваторіальна:</b>
+                    Екватор, Вісь світу</li>
+                <li class="flex items-center"><span class="legend-dot bg-red-500"></span> <b>Небесний меридіан</b>
+                    (Спільний)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Three.js Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        window.onload = function () {
+            // --- Сцена, Камера, Рендерер ---
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+
+            // Налаштування камери (кут огляду, співвідношення сторін, ближня/дальня площини)
+            const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(15, 12, 18);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            const radius = 10; // Радіус небесної сфери
+
+            // --- Функція для створення текстових міток ---
+            function createLabel(text, color, scale = 1.5) {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = 256;
+                canvas.height = 128;
+                context.font = "Bold 36px Arial";
+                context.fillStyle = color;
+                context.textAlign = "center";
+                context.textBaseline = "middle";
+
+                // Тінь для кращої читабельності
+                context.shadowColor = "rgba(0,0,0,0.8)";
+                context.shadowBlur = 4;
+                context.shadowOffsetX = 2;
+                context.shadowOffsetY = 2;
+
+                context.fillText(text, 128, 64);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+                const sprite = new THREE.Sprite(spriteMaterial);
+                sprite.scale.set(scale * 2, scale, 1);
+                sprite.renderOrder = 999; // Поверх всього
+                return sprite;
+            }
+
+            // --- 1. Земля (Центр) ---
+            const earthGeo = new THREE.SphereGeometry(0.5, 32, 32);
+            const earthMat = new THREE.MeshBasicMaterial({ color: 0x4B5563, wireframe: true });
+            const earth = new THREE.Mesh(earthGeo, earthMat);
+            scene.add(earth);
+
+            // --- 2. Небесна сфера (Зовнішній каркас) ---
+            const sphereGeo = new THREE.SphereGeometry(radius, 32, 16);
+            const sphereMat = new THREE.MeshBasicMaterial({
+                color: 0x333344,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.15
+            });
+            const celestialSphere = new THREE.Mesh(sphereGeo, sphereMat);
+            scene.add(celestialSphere);
+
+            // --- 3. ГОРИЗОНТАЛЬНА СИСТЕМА (Зелена - статична) ---
+            const horizontalGroup = new THREE.Group();
+
+            // Площина горизонту
+            const horizonGeo = new THREE.RingGeometry(0.1, radius, 64);
+            const horizonMat = new THREE.MeshBasicMaterial({ color: 0x22c55e, side: THREE.DoubleSide, transparent: true, opacity: 0.2 });
+            const horizon = new THREE.Mesh(horizonGeo, horizonMat);
+            horizon.rotation.x = -Math.PI / 2; // Лежить на площині XZ
+            horizontalGroup.add(horizon);
+
+            // Край горизонту (лінія)
+            const horizonEdgeGeo = new THREE.RingGeometry(radius, radius + 0.05, 64);
+            const horizonEdgeMat = new THREE.MeshBasicMaterial({ color: 0x4ade80, side: THREE.DoubleSide });
+            const horizonEdge = new THREE.Mesh(horizonEdgeGeo, horizonEdgeMat);
+            horizonEdge.rotation.x = -Math.PI / 2;
+            horizontalGroup.add(horizonEdge);
+
+            // Вектор Зеніту (вгору по Y)
+            const zenithLineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, radius + 1, 0)]);
+            const zenithLineMat = new THREE.LineBasicMaterial({ color: 0x4ade80, linewidth: 2 });
+            const zenithLine = new THREE.Line(zenithLineGeo, zenithLineMat);
+            horizontalGroup.add(zenithLine);
+
+            // Мітки Горизонтальної системи
+            const labelZ = createLabel("Зеніт", "#4ade80", 2); labelZ.position.set(0, radius + 1.5, 0); horizontalGroup.add(labelZ);
+            const labelN = createLabel("Пн (Північ)", "#4ade80"); labelN.position.set(0, 0.5, -radius - 0.5); horizontalGroup.add(labelN);
+            const labelS = createLabel("Пд (Південь)", "#4ade80"); labelS.position.set(0, 0.5, radius + 0.5); horizontalGroup.add(labelS);
+            const labelE = createLabel("Сх (Схід)", "#4ade80"); labelE.position.set(radius + 0.5, 0.5, 0); horizontalGroup.add(labelE);
+            const labelW = createLabel("Зх (Захід)", "#4ade80"); labelW.position.set(-radius - 0.5, 0.5, 0); horizontalGroup.add(labelW);
+
+            scene.add(horizontalGroup);
+
+            // --- 4. ЕКВАТОРІАЛЬНА СИСТЕМА (Синя - рухома) ---
+            const equatorialGroup = new THREE.Group();
+
+            // Площина Екватора
+            const equatorGeo = new THREE.RingGeometry(0.1, radius, 64);
+            const equatorMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, side: THREE.DoubleSide, transparent: true, opacity: 0.2 });
+            const equator = new THREE.Mesh(equatorGeo, equatorMat);
+            equator.rotation.x = -Math.PI / 2;
+            equatorialGroup.add(equator);
+
+            // Край екватора (лінія)
+            const equatorEdgeGeo = new THREE.RingGeometry(radius, radius + 0.05, 64);
+            const equatorEdgeMat = new THREE.MeshBasicMaterial({ color: 0x60a5fa, side: THREE.DoubleSide });
+            const equatorEdge = new THREE.Mesh(equatorEdgeGeo, equatorEdgeMat);
+            equatorEdge.rotation.x = -Math.PI / 2;
+            equatorialGroup.add(equatorEdge);
+
+            // Вісь Світу
+            const axisLineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, -radius - 1, 0), new THREE.Vector3(0, radius + 1, 0)]);
+            const axisLineMat = new THREE.LineBasicMaterial({ color: 0x60a5fa, linewidth: 2 });
+            const axisLine = new THREE.Line(axisLineGeo, axisLineMat);
+            equatorialGroup.add(axisLine);
+
+            // Мітки Екваторіальної системи
+            const labelNCP = createLabel("Пн. Полюс світу", "#60a5fa", 1.8); labelNCP.position.set(0, radius + 1.5, 0); equatorialGroup.add(labelNCP);
+            const labelSCP = createLabel("Пд. Полюс світу", "#60a5fa", 1.8); labelSCP.position.set(0, -radius - 1.5, 0); equatorialGroup.add(labelSCP);
+            const labelEq = createLabel("Небесний Екватор", "#60a5fa", 1.5); labelEq.position.set(radius + 1, 0, 0); equatorialGroup.add(labelEq);
+
+            scene.add(equatorialGroup);
+
+            // --- 5. НЕБЕСНИЙ МЕРИДІАН (Червоний - Спільний міст) ---
+            // Це велике коло, що проходить через Зеніт, Надір, Точки Пн і Пд.
+            // Лежить у площині YZ (x = 0).
+            const meridianGeo = new THREE.RingGeometry(radius - 0.02, radius + 0.08, 64);
+            const meridianMat = new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide });
+            const meridian = new THREE.Mesh(meridianGeo, meridianMat);
+            meridian.rotation.y = Math.PI / 2; // Поворот у площину YZ
+            scene.add(meridian);
+
+
+            // --- ЛОГІКА ОНОВЛЕННЯ ШИРОТИ ---
+            const slider = document.getElementById('latitudeSlider');
+            const latValueDisplay = document.getElementById('latValue');
+            const poleAltitudeDisplay = document.getElementById('poleAltitude');
+            const equatorZenithDisplay = document.getElementById('equatorZenith');
+
+            function updateLatitude() {
+                const lat = parseFloat(slider.value);
+                latValueDisplay.innerText = `${lat > 0 ? '+' : ''}${lat}°`;
+                poleAltitudeDisplay.innerText = `${Math.abs(lat)}°`;
+                equatorZenithDisplay.innerText = `${Math.abs(lat)}°`;
+
+                // Обертаємо екваторіальну групу.
+                // Коли lat = 90, Вісь світу (Y в групі) повинна збігатися із Зенітом (+Y сцени). Кут нахилу = 0.
+                // Коли lat = 0, Вісь світу повинна вказувати на Північ (-Z сцени). Кут нахилу = -90 град на осі X.
+                // Формула: обертання по осі X = -(90 - lat) * (Math.PI / 180)
+
+                const tiltAngleRad = -(90 - lat) * (Math.PI / 180);
+                equatorialGroup.rotation.x = tiltAngleRad;
+
+                // Щоб каркас небесної сфери обертався разом з віссю (імітація різних зір на екваторі)
+                celestialSphere.rotation.x = tiltAngleRad;
+            }
+
+            slider.addEventListener('input', updateLatitude);
+            // Ініціалізація початкового стану
+            updateLatitude();
+
+
+            // --- Анімаційний цикл ---
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // Змушуємо мітки завжди дивитися на камеру
+                horizontalGroup.children.forEach(child => { if (child.isSprite) child.lookAt(camera.position); });
+                equatorialGroup.children.forEach(child => { if (child.isSprite) child.lookAt(camera.position); });
+
+                controls.update();
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            // Обробка зміни розміру вікна
+            window.addEventListener('resize', onWindowResize, false);
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        };
+    </script>
+</body>
+
+</html>

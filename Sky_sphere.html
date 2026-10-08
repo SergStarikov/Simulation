@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Інтерактивна небесна сфера</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050510;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #ui-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(15, 15, 25, 0.85);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            width: 280px;
+        }
+
+        h2 {
+            margin: 0 0 15px 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        input[type=range] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+
+        .color-box {
+            width: 12px;
+            height: 12px;
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+
+<body>
+    <div id="ui-panel">
+        <h2>Налаштування спостерігача</h2>
+        <div class="control-group">
+            <label>Широта: <span id="lat-val">50</span>°</label>
+            <input type="range" id="latitude" min="-90" max="90" value="50" step="1">
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="color-box" style="background: #ff3333;"></div> Зеніт (місцева вертикаль)
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: rgba(150,150,150,0.5);"></div> Площина горизонту
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #00aaff;"></div> Вісь світу (полюси)
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #00ff66;"></div> Небесний екватор
+            </div>
+        </div>
+    </div>
+    <div id="canvas-container"></div>
+
+    <script>
+        // 1. Scene Setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        camera.position.set(20, 15, 25); // Initial camera angle
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // 2. Local Coordinate System (Static relative to observer)
+        // Earth (Center)
+        const earthGeo = new THREE.SphereGeometry(1.5, 32, 32);
+        const earthMat = new THREE.MeshBasicMaterial({ color: 0x225588, wireframe: true });
+        const earth = new THREE.Mesh(earthGeo, earthMat);
+        scene.add(earth);
+
+        // Horizon Plane
+        const horizonGeo = new THREE.PlaneGeometry(35, 35);
+        const horizonMat = new THREE.MeshBasicMaterial({
+            color: 0x999999,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.3
+        });
+        const horizon = new THREE.Mesh(horizonGeo, horizonMat);
+        horizon.rotation.x = Math.PI / 2; // Lay flat on XZ axis
+        scene.add(horizon);
+
+        // Zenith Vector (Pointing straight up on Y axis)
+        const zenithDir = new THREE.Vector3(0, 1, 0);
+        const zenithArrow = new THREE.ArrowHelper(zenithDir, new THREE.Vector3(0, 0, 0), 16, 0xff3333, 1.5, 1);
+        scene.add(zenithArrow);
+
+        // 3. Equatorial Coordinate System (Dynamic, rotates with latitude)
+        const equatorialGroup = new THREE.Group();
+        scene.add(equatorialGroup);
+
+        // Celestial Sphere (Wireframe representation)
+        const celestialGeo = new THREE.SphereGeometry(15, 32, 32);
+        const celestialMat = new THREE.MeshBasicMaterial({
+            color: 0x445566,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.25
+        });
+        const celestialSphere = new THREE.Mesh(celestialGeo, celestialMat);
+        equatorialGroup.add(celestialSphere);
+
+        // Celestial Equator (Ring perpendicular to World Axis)
+        const equatorGeo = new THREE.RingGeometry(14.8, 15, 64);
+        const equatorMat = new THREE.MeshBasicMaterial({ color: 0x00ff66, side: THREE.DoubleSide });
+        const equator = new THREE.Mesh(equatorGeo, equatorMat);
+        equator.rotation.x = Math.PI / 2;
+        equatorialGroup.add(equator);
+
+        // World Axis (Connecting North and South Celestial Poles)
+        const axisPoints = [new THREE.Vector3(0, -18, 0), new THREE.Vector3(0, 18, 0)];
+        const axisGeo = new THREE.BufferGeometry().setFromPoints(axisPoints);
+        const axisMat = new THREE.LineBasicMaterial({ color: 0x00aaff, linewidth: 2 });
+        const worldAxis = new THREE.Line(axisGeo, axisMat);
+        equatorialGroup.add(worldAxis);
+
+        // 4. Kinematics / Interaction Logic
+        const latSlider = document.getElementById('latitude');
+        const latVal = document.getElementById('lat-val');
+
+        function updateLatitude() {
+            const lat = parseFloat(latSlider.value);
+            latVal.textContent = lat;
+
+            // The altitude of the Celestial Pole above the horizon equals the observer's latitude.
+            // By default, our equatorial group aligns its Y-axis with the Zenith (lat = 90°).
+            // To adjust for latitude, we rotate the group around the Z-axis by (90 - lat) degrees.
+            const tiltRadians = THREE.MathUtils.degToRad(90 - lat);
+            equatorialGroup.rotation.z = tiltRadians;
+        }
+
+        // Event listener for the slider
+        latSlider.addEventListener('input', updateLatitude);
+
+        // Initialize position
+        updateLatitude();
+
+        // 5. Render Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update(); // Required if controls.enableDamping is true
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // 6. Responsive Design (Handle window resizing)
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }, false);
+    </script>
+</body>
+
+</html>

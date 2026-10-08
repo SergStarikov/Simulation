@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="uk" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UTC проти UT (UT1) — Інтерактивний науковий симулятор</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        space: {
+                            900: '#070913',
+                            800: '#0e1224',
+                            700: '#161d36',
+                            600: '#222d4f'
+                        },
+                        cyanGlow: '#00f2fe',
+                        amberGlow: '#f59e0b',
+                        purpleGlow: '#8b5cf6'
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        body {
+            background: radial-gradient(circle at 50% 0%, #171d3d 0%, #080a14 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .glass-panel {
+            background: rgba(14, 18, 36, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(22, 29, 54, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glow-cyan {
+            box-shadow: 0 0 25px rgba(0, 242, 254, 0.25);
+        }
+
+        .glow-amber {
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.25);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #080a14;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #253157;
+            border-radius: 9999px;
+        }
+
+        @keyframes pulse-subtle {
+
+            0%,
+            100% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.02);
+            }
+        }
+
+        .animate-pulse-subtle {
+            animation: pulse-subtle 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="p-3 sm:p-6 lg:p-8 flex flex-col items-center">
+
+    <header class="w-full max-w-7xl mb-6">
+        <div
+            class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 glass-panel p-5 rounded-2xl">
+            <div>
+                <div
+                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 text-xs font-semibold uppercase tracking-wider mb-2">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                    Астрономічний vs Атомний час
+                </div>
+                <h1
+                    class="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
+                    Чим відрізняється UTC від UT (UT1)?
+                </h1>
+                <p class="text-slate-400 text-sm mt-1 max-w-2xl">
+                    Порівняння нерівномірного обертання планети (UT1) та непорушної дискретності цезієвих атомних
+                    годинників (UTC).
+                </p>
+            </div>
+
+            <!-- Quick Concept Pill -->
+            <div class="flex items-center gap-3 bg-space-900/80 p-2.5 rounded-xl border border-white/5 text-xs">
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-amber-400"></div>
+                    <span class="font-medium text-amber-300">UT1:</span>
+                    <span class="text-slate-400">Кут Землі до Сонця</span>
+                </div>
+                <div class="h-4 w-px bg-slate-700"></div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-cyan-400"></div>
+                    <span class="font-medium text-cyan-300">UTC:</span>
+                    <span class="text-slate-400">Атомний стандарт</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="w-full max-w-7xl mb-6 flex flex-wrap gap-2">
+        <button id="tab-btn-sim" onclick="switchTab('sim')"
+            class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-lg">
+            <span class="inline-block mr-1.5">🪐</span> Живий симулятор і розбіжність
+        </button>
+        <button id="tab-btn-leap" onclick="switchTab('leap')"
+            class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 bg-space-800/80 text-slate-400 hover:text-slate-200 border border-white/5">
+            <span class="inline-block mr-1.5">⏱️</span> Анатомія секунди 23:59:60
+        </button>
+        <button id="tab-btn-physics" onclick="switchTab('physics')"
+            class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 bg-space-800/80 text-slate-400 hover:text-slate-200 border border-white/5">
+            <span class="inline-block mr-1.5">🌍</span> Чому Земля сповільнюється?
+        </button>
+        <button id="tab-btn-compare" onclick="switchTab('compare')"
+            class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 bg-space-800/80 text-slate-400 hover:text-slate-200 border border-white/5">
+            <span class="inline-block mr-1.5">📊</span> Порівняльна таблиця (UT vs UTC vs GMT vs TAI)
+        </button>
+    </nav>
+
+    <main class="w-full max-w-7xl space-y-6">
+
+        <!-- ==================== TAB 1: MAIN SIMULATOR ==================== -->
+        <div id="tab-sim" class="tab-content space-y-6">
+
+            <!-- Top Dual Displays Card -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                <!-- Left: UT1 (Astronomical) -->
+                <div
+                    class="glass-panel p-6 rounded-2xl relative overflow-hidden border-amber-500/20 glow-amber transition-all">
+                    <div
+                        class="absolute top-0 right-0 px-3 py-1 bg-amber-500/20 border-b border-l border-amber-500/30 text-amber-400 text-xs font-mono rounded-bl-xl">
+                        Джерело: Квазари / Меридіан
+                    </div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xl font-bold">
+                            🌍
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                                UT1 (Універсальний час)
+                            </h2>
+                            <p class="text-xs text-amber-400/80">Фізичний оберт планети навколо осі</p>
+                        </div>
+                    </div>
+
+                    <!-- Digital Clock Display -->
+                    <div class="bg-space-900/90 rounded-xl p-4 border border-amber-500/30 mb-4 text-center">
+                        <div id="clock-ut1"
+                            class="font-mono text-3xl sm:text-4xl font-extrabold tracking-wider text-amber-400">
+                            12:00:00.000
+                        </div>
+                        <div class="mt-2 text-xs text-slate-400 flex justify-between px-2">
+                            <span>Кут повороту Землі: <strong id="earth-angle"
+                                    class="text-amber-300 font-mono">0.00°</strong></span>
+                            <span>Доба: <strong id="lod-indicator" class="text-amber-300 font-mono">86400.002
+                                    c</strong></span>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Визначається Міжнародною службою обертання Землі (IERS) за допомогою радіоінтерферометрії з
+                        наддовгою базою (VLBI) по далеких квазарах. Коли Земля сповільнюється — секунда UT1 стає фізично
+                        довшою.
+                    </p>
+                </div>
+
+                <!-- Right: UTC (Coordinated Universal Time) -->
+                <div
+                    class="glass-panel p-6 rounded-2xl relative overflow-hidden border-cyan-500/20 glow-cyan transition-all">
+                    <div
+                        class="absolute top-0 right-0 px-3 py-1 bg-cyan-500/20 border-b border-l border-cyan-500/30 text-cyan-400 text-xs font-mono rounded-bl-xl">
+                        Джерело: 400+ Атомних годинників
+                    </div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-xl font-bold">
+                            ⚛️
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                                UTC (Всесвітній координований час)
+                            </h2>
+                            <p class="text-xs text-cyan-400/80">Офіційний стандарт цивільного часу світу</p>
+                        </div>
+                    </div>
+
+                    <!-- Digital Clock Display -->
+                    <div class="bg-space-900/90 rounded-xl p-4 border border-cyan-500/30 mb-4 text-center">
+                        <div id="clock-utc"
+                            class="font-mono text-3xl sm:text-4xl font-extrabold tracking-wider text-cyan-300">
+                            12:00:00.000
+                        </div>
+                        <div class="mt-2 text-xs text-slate-400 flex justify-between px-2">
+                            <span>Квантова частота Cs-133: <strong class="text-cyan-300 font-mono">9 192 631 770
+                                    Гц</strong></span>
+                            <span>Статус: <strong id="leap-status-tag"
+                                    class="text-emerald-400 font-mono">Синхронно</strong></span>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Базується на ідеальній секунді SI (Міжнародний атомний час TAI). Цей годинник ніколи не
+                        сповільнюється і не прискорюється сам по собі. Його коректують на цілу секунду вручну, щоб не
+                        відстати від Землі.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Interactive Dual Graphic Canvas -->
+            <div class="glass-panel p-5 sm:p-6 rounded-2xl space-y-4">
+                <div
+                    class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/5">
+                    <div>
+                        <h3 class="font-bold text-slate-100 flex items-center gap-2 text-base sm:text-lg">
+                            <span>🔭</span> Візуальна модель розходження механіки Землі та атомного еталону
+                        </h3>
+                        <p class="text-xs text-slate-400">Спостерігайте, як фізичне сповільнення викликає відставання
+                            кута Землі від строгого атомного часу</p>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="flex items-center gap-2">
+                        <button id="btn-play" onclick="togglePlay()"
+                            class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition flex items-center gap-1.5">
+                            <span id="play-icon">⏸️</span> <span id="play-text">Пауза</span>
+                        </button>
+                        <button onclick="resetSim()"
+                            class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-700/50 text-slate-300 border border-white/10 hover:bg-slate-700 transition">
+                            🔄 Скинути
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Canvas Container -->
+                <div class="relative w-full h-80 bg-space-900/95 rounded-xl border border-white/5 overflow-hidden">
+                    <canvas id="sim-canvas" class="w-full h-full block cursor-crosshair"></canvas>
+
+                    <!-- Real-time drift badge overlay -->
+                    <div
+                        class="absolute bottom-3 left-3 bg-space-800/90 backdrop-blur-md p-3 rounded-xl border border-white/10 text-xs space-y-1">
+                        <div class="text-slate-400">Розбіжність: <strong class="text-white font-mono">DUT1 = UT1 -
+                                UTC</strong></div>
+                        <div class="text-lg font-mono font-bold" id="dut1-text-badge">+0.000 с</div>
+                        <div class="text-[10px] text-slate-400">Критичний поріг для вставки високосної секунди: <span
+                                class="text-rose-400 font-bold font-mono">±0.900 с</span></div>
+                    </div>
+
+                    <!-- Legend overlay -->
+                    <div
+                        class="absolute top-3 right-3 bg-space-800/90 backdrop-blur-md p-2.5 rounded-xl border border-white/10 text-[11px] space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-1 bg-amber-400 rounded-full inline-block"></span>
+                            <span class="text-slate-300">Меридіан Землі (UT1)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-1 bg-cyan-400 rounded-full inline-block"></span>
+                            <span class="text-slate-300">Ідеальний орієнтир (UTC)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drift Gauge Bar -->
+                <div class="bg-space-900/70 p-4 rounded-xl border border-white/5">
+                    <div class="flex justify-between items-center text-xs mb-2">
+                        <span class="text-rose-400 font-mono font-semibold">-0.9 с (Ліміт)</span>
+                        <span class="text-slate-300 font-medium">Поточне відхилення DUT1 (<span id="gauge-val"
+                                class="font-mono text-cyan-300">0.000s</span>)</span>
+                        <span class="text-rose-400 font-mono font-semibold">+0.9 с (Ліміт)</span>
+                    </div>
+                    <div class="w-full h-4 bg-slate-950 rounded-full relative overflow-hidden border border-slate-800">
+                        <!-- Center zero marker -->
+                        <div class="absolute left-1/2 top-0 bottom-0 w-0.5 bg-slate-600 z-10"></div>
+                        <!-- Safe tolerance zone -->
+                        <div
+                            class="absolute left-[10%] right-[10%] top-0 bottom-0 bg-emerald-500/10 border-x border-emerald-500/30">
+                        </div>
+                        <!-- Current needle / bar -->
+                        <div id="gauge-bar"
+                            class="h-full bg-gradient-to-r from-cyan-400 to-amber-400 transition-all duration-75 absolute left-1/2 w-0"
+                            style="left: 50%; transform-origin: left;"></div>
+                    </div>
+                    <p class="text-[11px] text-slate-400 text-center mt-2">
+                        Міжнародне правило IERS вимагає, щоб абсолютна різниця <strong class="text-slate-200">|UT1 -
+                            UTC| не перевищувала 0.9 секунди</strong>.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Interactive Experimentation Controls -->
+            <div class="glass-panel p-5 rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                <!-- Speed multiplier -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-xs font-semibold">
+                        <span class="text-slate-300">Швидкість симуляції:</span>
+                        <span id="val-speed" class="text-cyan-400 font-mono">x100</span>
+                    </div>
+                    <input id="slider-speed" type="range" min="1" max="1000" value="100"
+                        class="w-full accent-cyan-400 cursor-pointer" oninput="updateParams()">
+                    <div class="flex justify-between text-[10px] text-slate-500">
+                        <span>Реальний час (x1)</span>
+                        <span>x500</span>
+                        <span>x1000 (Швидкий дрейф)</span>
+                    </div>
+                </div>
+
+                <!-- Earth Slowdown (Tidal friction) -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-xs font-semibold">
+                        <span class="text-slate-300">Сповільнення доби Землі:</span>
+                        <span id="val-slowdown" class="text-amber-400 font-mono">+2.5 мс/добу</span>
+                    </div>
+                    <input id="slider-slowdown" type="range" min="-3" max="6" step="0.5" value="2.5"
+                        class="w-full accent-amber-400 cursor-pointer" oninput="updateParams()">
+                    <div class="flex justify-between text-[10px] text-slate-500">
+                        <span>Земля прискорена (-3мс)</span>
+                        <span>0</span>
+                        <span>Сильне гальмування (+6мс)</span>
+                    </div>
+                </div>
+
+                <!-- Manual Leap Second Action -->
+                <div class="flex flex-col justify-end space-y-2">
+                    <button id="btn-manual-leap" onclick="insertLeapSecond(1)"
+                        class="w-full py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider bg-gradient-to-r from-amber-500 to-rose-500 text-white hover:opacity-90 shadow-lg transition active:scale-95 flex items-center justify-center gap-2">
+                        <span>⚡</span> Вставити високосну секунду (+1 c)
+                    </button>
+                    <p class="text-[10px] text-slate-400 text-center">
+                        Додає `23:59:60` до UTC і миттєво підтягує атомний годинник до Землі.
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ==================== TAB 2: LEAP SECOND ANATOMY ==================== -->
+        <div id="tab-leap" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <span>⏱️</span> Як працює секунда 23:59:60 UTC
+                    </h2>
+                    <p class="text-sm text-slate-400 mt-1">
+                        Коли різниця між UT1 та UTC наближається до 0.9 секунди, IERS призначає високосну секунду
+                        (зазвичай 30 червня або 31 грудня).
+                    </p>
+                </div>
+
+                <!-- Interactive sequence visualizer -->
+                <div class="bg-space-900 p-6 rounded-xl border border-white/10 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Покроковий перегляд
+                            додавання секунди</span>
+                        <div class="flex gap-2">
+                            <button onclick="stepLeapSequence(-1)"
+                                class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-xs rounded border border-white/10">⬅️
+                                Попередній крок</button>
+                            <button onclick="stepLeapSequence(1)"
+                                class="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 text-xs text-white rounded font-bold">Наступний
+                                крок ➡️</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center" id="sequence-steps">
+                        <!-- Step 1 -->
+                        <div class="step-card p-4 rounded-xl border border-slate-700 bg-space-800/50 transition-all"
+                            data-step="0">
+                            <div class="text-xs text-slate-400 mb-1">Звичайний передостанній момент</div>
+                            <div class="font-mono text-xl font-bold text-slate-200">23:59:58</div>
+                            <div class="text-[11px] text-slate-400 mt-2">UTC та UT1 ще мають невелику різницю.</div>
+                        </div>
+                        <!-- Step 2 -->
+                        <div class="step-card p-4 rounded-xl border border-slate-700 bg-space-800/50 transition-all"
+                            data-step="1">
+                            <div class="text-xs text-slate-400 mb-1">Остання стандартна секунда доби</div>
+                            <div class="font-mono text-xl font-bold text-slate-200">23:59:59</div>
+                            <div class="text-[11px] text-slate-400 mt-2">За звичайних умов наступною була б 00:00:00.
+                            </div>
+                        </div>
+                        <!-- Step 3 (The leap) -->
+                        <div class="step-card p-4 rounded-xl border border-amber-500/40 bg-amber-500/10 transition-all ring-2 ring-amber-500/30"
+                            data-step="2">
+                            <div class="text-xs text-amber-300 font-bold mb-1">Екстра-секунда (Leap Second)</div>
+                            <div class="font-mono text-2xl font-black text-amber-400 animate-pulse">23:59:60</div>
+                            <div class="text-[11px] text-amber-200/90 mt-2">Атомний годинник "завмирає", чекаючи
+                                довертання Землі!</div>
+                        </div>
+                        <!-- Step 4 -->
+                        <div class="step-card p-4 rounded-xl border border-slate-700 bg-space-800/50 transition-all"
+                            data-step="3">
+                            <div class="text-xs text-slate-400 mb-1">Початок нової доби</div>
+                            <div class="font-mono text-xl font-bold text-emerald-400">00:00:00</div>
+                            <div class="text-[11px] text-emerald-300 mt-2">UTC та UT1 знову ідеально синхронізовані!
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="step-explainer"
+                        class="p-4 rounded-lg bg-space-950 border border-slate-800 text-xs text-slate-300 leading-relaxed">
+                        Натискайте кнопки «Попередній / Наступний крок», щоб зрозуміти, чому секунда 23:59:60 є
+                        унікальною математичною аномалією для серверів та баз даних.
+                    </div>
+                </div>
+
+                <!-- Tech vs Science Impact -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                    <div class="glass-card p-5 rounded-xl border-rose-500/20">
+                        <h3 class="font-bold text-rose-400 flex items-center gap-2 mb-2 text-sm">
+                            <span>⚠️</span> Комп'ютерна проблема високосних секунд
+                        </h3>
+                        <p class="text-xs text-slate-300 leading-relaxed mb-3">
+                            Більшість операційних систем і протоколів (NTP, POSIX time) очікують рівно 86 400 секунд у
+                            добі. Секунда з номером 60 ламала кластери баз даних, біржові торги та авіаційні системи.
+                        </p>
+                        <div class="text-[11px] bg-space-900 p-2.5 rounded-lg text-slate-400 border border-white/5">
+                            💡 <strong>Рішення Google (Leap Smear):</strong> Замість секунди `:60` сервери плавно
+                            розтягують 86 400 секунд на долі мікросекунд протягом 24 годин.
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-5 rounded-xl border-cyan-500/20">
+                        <h3 class="font-bold text-cyan-400 flex items-center gap-2 mb-2 text-sm">
+                            <span>🏛️</span> Майбутнє: Рішення скасувати секунди координації
+                        </h3>
+                        <p class="text-xs text-slate-300 leading-relaxed mb-3">
+                            На Генеральній конференції мір і ваг (CGPM) у 2022 році було прийнято рішення призупинити
+                            додавання високосних секунд до 2035 року.
+                        </p>
+                        <div class="text-[11px] bg-space-900 p-2.5 rounded-lg text-slate-400 border border-white/5">
+                            Допустиме відхилення між UT1 та UTC буде збільшено приблизно до 1 хвилини, щоб не руйнувати
+                            глобальну IT-інфраструктуру.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ==================== TAB 3: WHY EARTH SLOWS DOWN ==================== -->
+        <div id="tab-physics" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <span>🌍</span> Чому Земля — не ідеальний годинник?
+                    </h2>
+                    <p class="text-sm text-slate-400 mt-1">
+                        UT1 нестабільний, тому що Земля постійно перерозподіляє свою масу та відчуває зовнішні
+                        гравітаційні сили.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+                    <!-- Cause 1 -->
+                    <div class="glass-card p-5 rounded-xl border-white/5 hover:border-amber-500/30 transition">
+                        <div class="text-2xl mb-2">🌊</div>
+                        <h3 class="font-bold text-sm text-slate-100 mb-1">Припливне тертя океанів</h3>
+                        <span
+                            class="inline-block px-2 py-0.5 rounded text-[10px] font-mono bg-rose-500/20 text-rose-300 mb-2">Головне
+                            гальмо</span>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Гравітація Місяця тягне водяну оболонку Землі. Припливна хвиля тертям об морське дно
+                            поступово сповільнює обертання планети приблизно на ~1.8 – 2.3 мс на століття.
+                        </p>
+                    </div>
+
+                    <!-- Cause 2 -->
+                    <div class="glass-card p-5 rounded-xl border-white/5 hover:border-cyan-500/30 transition">
+                        <div class="text-2xl mb-2">🌋</div>
+                        <h3 class="font-bold text-sm text-slate-100 mb-1">Рух рідкого ядра</h3>
+                        <span
+                            class="inline-block px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300 mb-2">Десятилітні
+                            коливання</span>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            В'язка взаємодія між рідким залізним зовнішнім ядром і мантією Землі передає кутовий момент,
+                            викликаючи періодичні прискорення або сповільнення на масштабах 10–60 років.
+                        </p>
+                    </div>
+
+                    <!-- Cause 3 -->
+                    <div class="glass-card p-5 rounded-xl border-white/5 hover:border-emerald-500/30 transition">
+                        <div class="text-2xl mb-2">🧊</div>
+                        <h3 class="font-bold text-sm text-slate-100 mb-1">Післяльодовикове підняття</h3>
+                        <span
+                            class="inline-block px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-300 mb-2">Прискорювач
+                            обертання</span>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            З моменту останнього льодовикового періоду мантія біля полюсів повільно вирівнюється після
+                            танення кілометрових льодовиків. Планета стає круглішою (ефект фігуриста, що притискає
+                            руки), трохи прискорюючись.
+                        </p>
+                    </div>
+
+                    <!-- Cause 4 -->
+                    <div class="glass-card p-5 rounded-xl border-white/5 hover:border-purple-500/30 transition">
+                        <div class="text-2xl mb-2">🌪️</div>
+                        <h3 class="font-bold text-sm text-slate-100 mb-1">Атмосфера та землетруси</h3>
+                        <span
+                            class="inline-block px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/20 text-purple-300 mb-2">Сезонний
+                            шум</span>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Сильні струменеві вітри (Jet streams) та сезонні мусони передають імпульс твердому тілу
+                            планети. Великі землетруси також миттєво змінюють форму Землі на мікросекунди.
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- Interactive LOD explanation chart -->
+                <div
+                    class="bg-space-900 p-5 rounded-xl border border-white/10 flex flex-col sm:flex-row items-center gap-6">
+                    <div class="w-full sm:w-1/3 text-center sm:text-left">
+                        <div class="text-xs text-slate-400 uppercase tracking-wide">Параметр IERS</div>
+                        <div class="text-2xl font-mono font-extrabold text-amber-400 mt-1">LOD (Length of Day)</div>
+                        <p class="text-xs text-slate-300 mt-2">
+                            Тривалість астрономічної доби не є константою:
+                            <br><strong class="font-mono text-cyan-300">86 400 с + ΔLOD</strong>
+                        </p>
+                    </div>
+                    <div
+                        class="w-full sm:w-2/3 text-xs text-slate-400 space-y-2 border-t sm:border-t-0 sm:border-l border-white/10 pt-4 sm:pt-0 sm:pl-6">
+                        <div>
+                            • <strong>Якщо доба = 86 400.001 секунди:</strong> за 1000 днів Земля відстане від атомного
+                            годинника на 1 цілу секунду.
+                        </div>
+                        <div>
+                            • <strong>У 2020–2022 роках:</strong> Земля раптово встановила серію рекордів швидкості
+                            (доба була коротшою за 86 400 секунд на 1.5 мс), через що вчені навіть обговорювали
+                            можливість <span class="text-rose-400 font-semibold">«негативної високосної секунди»</span>
+                            (віднімання секунди 23:59:58 ➡️ 00:00:00).
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ==================== TAB 4: COMPARISON TABLE ==================== -->
+        <div id="tab-compare" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <span>📊</span> Порівняння шкал часу: UT, UTC, TAI та GMT
+                    </h2>
+                    <p class="text-sm text-slate-400 mt-1">
+                        Часто ці терміни плутають у побуті або вважають синонімами, але в науці й техніці вони мають
+                        принципові відмінності.
+                    </p>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="border-b border-white/10 bg-space-900/80 text-slate-300 font-semibold">
+                                <th class="p-3.5 rounded-tl-xl">Шкала часу</th>
+                                <th class="p-3.5">Що береться за основу?</th>
+                                <th class="p-3.5">Стабільність секунди</th>
+                                <th class="p-3.5">Високосні секунди</th>
+                                <th class="p-3.5 rounded-tr-xl">Основне призначення</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 font-sans">
+                            <tr class="hover:bg-white/[0.02]">
+                                <td class="p-3.5 font-bold text-amber-400 font-mono">UT (UT1)</td>
+                                <td class="p-3.5 text-slate-300">Фактичне обертання Землі (кут ERA за квазарами)</td>
+                                <td class="p-3.5 text-rose-400">Плаває разом із планетою</td>
+                                <td class="p-3.5 text-slate-400">Ніколи не застосовуються</td>
+                                <td class="p-3.5 text-slate-300">Астрономічні телескопи, орієнтація супутників, геодезія
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-white/[0.02] bg-cyan-950/20">
+                                <td class="p-3.5 font-bold text-cyan-300 font-mono">UTC</td>
+                                <td class="p-3.5 text-slate-300">Атомні годинники (TAI), синхронізовані з UT1</td>
+                                <td class="p-3.5 text-emerald-400">Абсолютна (атомна секунда SI)</td>
+                                <td class="p-3.5 text-amber-300 font-medium">Так (щоб тримати |UT1 - UTC| &lt; 0.9 c)
+                                </td>
+                                <td class="p-3.5 text-slate-300">Глобальний цивільний час, авіація, ОС, стандартизація
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-white/[0.02]">
+                                <td class="p-3.5 font-bold text-purple-400 font-mono">TAI</td>
+                                <td class="p-3.5 text-slate-300">Мережа з 400+ атомних годинників у 80 лабораторіях</td>
+                                <td class="p-3.5 text-emerald-400">Абсолютна (безперервна шкала)</td>
+                                <td class="p-3.5 text-slate-400">Жодних корекцій (TAI = UTC + 37 c)</td>
+                                <td class="p-3.5 text-slate-300">Наукові фізичні розрахунки, GPS (GPS = TAI - 19 с)</td>
+                            </tr>
+                            <tr class="hover:bg-white/[0.02]">
+                                <td class="p-3.5 font-bold text-slate-300 font-mono">GMT</td>
+                                <td class="p-3.5 text-slate-300">Сонячний час на Гринвіцькому меридіані</td>
+                                <td class="p-3.5 text-slate-400">Історичний стандарт</td>
+                                <td class="p-3.5 text-slate-400">Застаріле визначення</td>
+                                <td class="p-3.5 text-slate-300">Використовується у побуті в Великій Британії як назва
+                                    поясу</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div
+                    class="p-4 rounded-xl bg-space-900/60 border border-white/5 text-xs text-slate-400 leading-relaxed">
+                    💡 <strong>Коротка пам'ятка:</strong> Коли програміст або диспетчер каже «час за Гринвічем»,
+                    технічно вони мають на увазі саме <strong class="text-cyan-300">UTC</strong>. А коли астроном
+                    розраховує кут наведення радіотелескопа на зірку, йому потрібен саме <strong
+                        class="text-amber-300">UT1</strong>.
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // State Variables
+        let isRunning = true;
+        let simSpeed = 100; // Multiplier
+        let slowdownMsPerDay = 2.5; // milliseconds Earth is slower than 86400s
+        let baseTime = new Date(Date.UTC(2026, 0, 1, 12, 0, 0, 0)); // Simulated UTC
+        let dut1Seconds = 0.35; // Initial UT1 - UTC drift in seconds (within [-0.9, 0.9])
+        let totalElapsedVirtualSeconds = 0;
+        let leapSecondPending = false;
+        let leapSecondAnimProgress = 0;
+        let activeTab = 'sim';
+
+        // Canvas elements
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Leap steps state
+        let currentStepIndex = 2; // Show leap second by default
+
+        // Handle responsive canvas
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function switchTab(tabId) {
+            activeTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-cyan-500/20', 'text-cyan-300', 'border-cyan-500/40', 'shadow-lg');
+                btn.classList.add('bg-space-800/80', 'text-slate-400', 'border-white/5');
+            });
+
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            const activeBtn = document.getElementById('tab-btn-' + tabId);
+            activeBtn.classList.remove('bg-space-800/80', 'text-slate-400', 'border-white/5');
+            activeBtn.classList.add('bg-cyan-500/20', 'text-cyan-300', 'border-cyan-500/40', 'shadow-lg');
+
+            if (tabId === 'sim') {
+                setTimeout(resizeCanvas, 50);
+            }
+        }
+
+        function togglePlay() {
+            isRunning = !isRunning;
+            const icon = document.getElementById('play-icon');
+            const text = document.getElementById('play-text');
+            if (isRunning) {
+                icon.textContent = '⏸️';
+                text.textContent = 'Пауза';
+            } else {
+                icon.textContent = '▶️';
+                text.textContent = 'Пуск';
+            }
+        }
+
+        function updateParams() {
+            simSpeed = parseFloat(document.getElementById('slider-speed').value);
+            slowdownMsPerDay = parseFloat(document.getElementById('slider-slowdown').value);
+            document.getElementById('val-speed').textContent = 'x' + simSpeed;
+            document.getElementById('val-slowdown').textContent = (slowdownMsPerDay > 0 ? '+' : '') + slowdownMsPerDay.toFixed(1) + ' мс/добу';
+
+            const lod = 86400 + (slowdownMsPerDay / 1000);
+            document.getElementById('lod-indicator').textContent = lod.toFixed(4) + ' с';
+        }
+
+        function resetSim() {
+            baseTime = new Date(Date.UTC(2026, 0, 1, 12, 0, 0, 0));
+            dut1Seconds = 0.20;
+            totalElapsedVirtualSeconds = 0;
+            leapSecondPending = false;
+            document.getElementById('leap-status-tag').textContent = 'Синхронно';
+            document.getElementById('leap-status-tag').className = 'text-emerald-400 font-mono';
+        }
+
+        function insertLeapSecond(direction = 1) {
+            // Leap second adds 1 sec to UTC, which means (UT1 - UTC) becomes:
+            // DUT1_new = UT1 - (UTC + 1) = DUT1_old - 1
+            dut1Seconds -= 1.0 * direction;
+
+            // Flash UI feedback
+            const statusTag = document.getElementById('leap-status-tag');
+            statusTag.textContent = 'Вставлено +1с!';
+            statusTag.className = 'text-amber-400 font-mono font-bold animate-pulse';
+
+            setTimeout(() => {
+                statusTag.textContent = 'Синхронно';
+                statusTag.className = 'text-emerald-400 font-mono';
+            }, 3000);
+        }
+
+        function stepLeapSequence(dir) {
+            currentStepIndex = Math.max(0, Math.min(3, currentStepIndex + dir));
+            const cards = document.querySelectorAll('.step-card');
+            cards.forEach((card, idx) => {
+                if (idx === currentStepIndex) {
+                    card.classList.remove('border-slate-700', 'bg-space-800/50');
+                    card.classList.add('border-cyan-400', 'bg-cyan-500/20', 'ring-2', 'ring-cyan-400/40');
+                } else {
+                    card.classList.remove('border-cyan-400', 'bg-cyan-500/20', 'ring-2', 'ring-cyan-400/40');
+                    card.classList.add('border-slate-700', 'bg-space-800/50');
+                }
+            });
+
+            const messages = [
+                "Крок 1: Час 23:59:58 — переддень події. Обидві системи відліку функціонують у штатному режимі.",
+                "Крок 2: Час 23:59:59 — зазвичай остання секунда календарної доби, після якої цифровий годинник перемикається на нулі.",
+                "Крок 3: Унікальна секунда 23:59:60 UTC! Доба подовжується рівно на 1 секунду (86 401 с). Атомний годинник штучно затримується, дозволяючи Землі повернутися у потрібне положення.",
+                "Крок 4: Час 00:00:00 — настає нова доба. Розбіжність між кутом Землі (UT1) та атомним годинником (UTC) успішно обнулена!"
+            ];
+            document.getElementById('step-explainer').textContent = messages[currentStepIndex];
+        }
+
+        let lastTimestamp = performance.now();
+
+        function renderSimulation(now) {
+            const deltaMs = Math.min(now - lastTimestamp, 100);
+            lastTimestamp = now;
+
+            if (isRunning) {
+                const virtualDeltaSec = (deltaMs / 1000) * simSpeed;
+                totalElapsedVirtualSeconds += virtualDeltaSec;
+
+                // Advance UTC by virtual seconds
+                baseTime = new Date(baseTime.getTime() + virtualDeltaSec * 1000);
+
+                // Calculate drift in UT1:
+                // If Earth day is longer than 86400 by slowdownMsPerDay:
+                // Drift rate per second = (slowdownMsPerDay / 1000) / 86400
+                const driftRatePerSec = (slowdownMsPerDay / 1000) / 86400;
+                dut1Seconds -= driftRatePerSec * virtualDeltaSec;
+
+                // Auto warn or auto leap threshold
+                if (Math.abs(dut1Seconds) >= 0.9 && !leapSecondPending) {
+                    // Alert state in UI
+                    document.getElementById('leap-status-tag').textContent = 'Потрібна корекція!';
+                    document.getElementById('leap-status-tag').className = 'text-rose-400 font-mono font-bold animate-pulse';
+                }
+            }
+
+            // Update Clocks text
+            const utcHours = String(baseTime.getUTCHours()).padStart(2, '0');
+            const utcMinutes = String(baseTime.getUTCMinutes()).padStart(2, '0');
+            const utcSec = String(baseTime.getUTCSeconds()).padStart(2, '0');
+            const utcMs = String(baseTime.getUTCMilliseconds()).padStart(3, '0');
+            document.getElementById('clock-utc').textContent = `${utcHours}:${utcMinutes}:${utcSec}.${utcMs}`;
+
+            // Calculate UT1 Time: UTC + DUT1
+            const ut1Time = new Date(baseTime.getTime() + dut1Seconds * 1000);
+            const ut1Hours = String(ut1Time.getUTCHours()).padStart(2, '0');
+            const ut1Minutes = String(ut1Time.getUTCMinutes()).padStart(2, '0');
+            const ut1Sec = String(ut1Time.getUTCSeconds()).padStart(2, '0');
+            const ut1Ms = String(ut1Time.getUTCMilliseconds()).padStart(3, '0');
+            document.getElementById('clock-ut1').textContent = `${ut1Hours}:${ut1Minutes}:${ut1Sec}.${ut1Ms}`;
+
+            // Earth Angle (0 - 360 deg based on UT1 seconds in day)
+            const dayFraction = ((ut1Time.getUTCHours() * 3600) + (ut1Time.getUTCMinutes() * 60) + ut1Time.getUTCSeconds() + (ut1Time.getUTCMilliseconds() / 1000)) / 86400;
+            const earthAngleDeg = (dayFraction * 360) % 360;
+            document.getElementById('earth-angle').textContent = earthAngleDeg.toFixed(2) + '°';
+
+            // Update Gauge Bar
+            // Gauge covers -1.0s to +1.0s. 0s is at 50% width.
+            const gaugeValEl = document.getElementById('gauge-val');
+            const gaugeBarEl = document.getElementById('gauge-bar');
+            const dut1Badge = document.getElementById('dut1-text-badge');
+
+            const sign = dut1Seconds >= 0 ? '+' : '';
+            const dut1Formatted = sign + dut1Seconds.toFixed(3) + ' с';
+            gaugeValEl.textContent = dut1Formatted;
+            dut1Badge.textContent = dut1Formatted;
+
+            if (Math.abs(dut1Seconds) > 0.9) {
+                dut1Badge.className = 'text-lg font-mono font-bold text-rose-400 animate-pulse';
+            } else {
+                dut1Badge.className = 'text-lg font-mono font-bold text-cyan-300';
+            }
+
+            // Convert -1.0..+1.0s into percentage [0..100%]
+            // If dut1 is positive (e.g. +0.3), width is 15% from left 50%
+            const halfWidthPercent = 50;
+            const barPercent = Math.min(Math.max((dut1Seconds / 1.0) * halfWidthPercent, -halfWidthPercent), halfWidthPercent);
+            if (barPercent >= 0) {
+                gaugeBarEl.style.left = '50%';
+                gaugeBarEl.style.width = barPercent + '%';
+                gaugeBarEl.className = 'h-full bg-gradient-to-r from-cyan-400 to-amber-400 absolute transition-all duration-75';
+            } else {
+                gaugeBarEl.style.left = (50 + barPercent) + '%';
+                gaugeBarEl.style.width = Math.abs(barPercent) + '%';
+                gaugeBarEl.className = 'h-full bg-gradient-to-r from-rose-500 to-amber-400 absolute transition-all duration-75';
+            }
+
+            drawCanvas(earthAngleDeg, dayFraction);
+
+            requestAnimationFrame(renderSimulation);
+        }
+
+        function drawCanvas(earthAngleDeg, dayFraction) {
+            const rect = canvas.getBoundingClientRect();
+            const w = rect.width;
+            const h = rect.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Background stars & space grid
+            ctx.fillStyle = '#080a15';
+            ctx.fillRect(0, 0, w, h);
+
+            // Subtle stars
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            const seedPoints = [
+                [w * 0.1, h * 0.2], [w * 0.25, h * 0.7], [w * 0.85, h * 0.15],
+                [w * 0.7, h * 0.8], [w * 0.4, h * 0.1], [w * 0.9, h * 0.65],
+                [w * 0.15, h * 0.85], [w * 0.6, h * 0.3]
+            ];
+            seedPoints.forEach(([x, y]) => {
+                ctx.beginPath();
+                ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // SECTION 1: Earth (Center Left)
+            const earthCenterX = w * 0.32;
+            const earthCenterY = h * 0.5;
+            const earthRadius = Math.min(w, h) * 0.26;
+
+            // Solar lighting from the right
+            const sunGradient = ctx.createLinearGradient(earthCenterX - earthRadius, earthCenterY, earthCenterX + earthRadius, earthCenterY);
+            sunGradient.addColorStop(0, '#0c1b33');
+            sunGradient.addColorStop(0.5, '#1e3a8a');
+            sunGradient.addColorStop(1, '#38bdf8');
+
+            // Earth sphere
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(earthCenterX, earthCenterY, earthRadius, 0, Math.PI * 2);
+            ctx.fillStyle = sunGradient;
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+            ctx.stroke();
+
+            // Atmospheric glow
+            const glowGrad = ctx.createRadialGradient(earthCenterX, earthCenterY, earthRadius * 0.8, earthCenterX, earthCenterY, earthRadius * 1.2);
+            glowGrad.addColorStop(0, 'transparent');
+            glowGrad.addColorStop(1, 'rgba(0, 242, 254, 0.15)');
+            ctx.fillStyle = glowGrad;
+            ctx.beginPath();
+            ctx.arc(earthCenterX, earthCenterY, earthRadius * 1.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Earth Equator & Meridian Line (UT1)
+            const radAngle = (earthAngleDeg * Math.PI) / 180;
+
+            // Greenwich Meridian Vector (UT1)
+            const meridianX = earthCenterX + Math.cos(radAngle) * (earthRadius + 18);
+            const meridianY = earthCenterY + Math.sin(radAngle) * (earthRadius + 18);
+
+            // Draw Earth Meridian Pointer (UT1 - Amber)
+            ctx.beginPath();
+            ctx.moveTo(earthCenterX, earthCenterY);
+            ctx.lineTo(meridianX, meridianY);
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 3.5;
+            ctx.stroke();
+
+            // Pointer tip
+            ctx.beginPath();
+            ctx.arc(meridianX, meridianY, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#f59e0b';
+            ctx.shadowColor = '#f59e0b';
+            ctx.shadowBlur = 12;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Atomic Target Pointer (UTC equivalent theoretical position)
+            // Ideal angle if strictly 86400.000s SI
+            const utcDayFraction = ((baseTime.getUTCHours() * 3600) + (baseTime.getUTCMinutes() * 60) + baseTime.getUTCSeconds() + (baseTime.getUTCMilliseconds() / 1000)) / 86400;
+            const utcAngleRad = (utcDayFraction * 360 * Math.PI) / 180;
+            const utcX = earthCenterX + Math.cos(utcAngleRad) * (earthRadius + 30);
+            const utcY = earthCenterY + Math.sin(utcAngleRad) * (earthRadius + 30);
+
+            ctx.beginPath();
+            ctx.moveTo(earthCenterX, earthCenterY);
+            ctx.lineTo(utcX, utcY);
+            ctx.strokeStyle = '#00f2fe';
+            ctx.lineWidth = 1.8;
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.beginPath();
+            ctx.arc(utcX, utcY, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#00f2fe';
+            ctx.shadowColor = '#00f2fe';
+            ctx.shadowBlur = 10;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Earth labels
+            ctx.font = '600 12px Inter, sans-serif';
+            ctx.fillStyle = '#cbd5e1';
+            ctx.textAlign = 'center';
+            ctx.fillText('Планета Земля (UT1)', earthCenterX, earthCenterY + earthRadius + 42);
+
+            // SECTION 2: Atomic Fountain Clock Representation (Center Right)
+            const atomicCenterX = w * 0.74;
+            const atomicCenterY = h * 0.5;
+            const atomicBoxW = Math.min(w * 0.38, 240);
+            const atomicBoxH = 170;
+
+            // Glass box for atomic resonator
+            ctx.fillStyle = 'rgba(14, 18, 36, 0.7)';
+            ctx.strokeStyle = 'rgba(0, 242, 254, 0.25)';
+            ctx.lineWidth = 1.5;
+            roundRect(ctx, atomicCenterX - atomicBoxW / 2, atomicCenterY - atomicBoxH / 2, atomicBoxW, atomicBoxH, 16);
+            ctx.fill();
+            ctx.stroke();
+
+            // Atomic Title
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = '700 11px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('АТОМНИЙ ЕТАЛОН Cs-133 (UTC)', atomicCenterX, atomicCenterY - atomicBoxH / 2 + 24);
+
+            // Sinusoidal quantum wave animation
+            ctx.beginPath();
+            const waveWidth = atomicBoxW - 40;
+            const startX = atomicCenterX - waveWidth / 2;
+            ctx.moveTo(startX, atomicCenterY);
+            const freq = 0.08;
+            const waveSpeed = performance.now() * 0.005;
+
+            for (let x = 0; x < waveWidth; x++) {
+                const y = Math.sin(x * freq + waveSpeed) * 18;
+                ctx.lineTo(startX + x, atomicCenterY + y);
+            }
+            ctx.strokeStyle = '#00f2fe';
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = '#00f2fe';
+            ctx.shadowBlur = 8;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Laser microwave cavity dots
+            ctx.fillStyle = '#e0f2fe';
+            ctx.beginPath();
+            ctx.arc(atomicCenterX, atomicCenterY, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Frequency label
+            ctx.font = '500 10px JetBrains Mono, monospace';
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillText('Δν_Cs = 9 192 631 770 Гц', atomicCenterX, atomicCenterY + 44);
+            ctx.fillStyle = '#34d399';
+            ctx.fillText('Похибка: 1 с за 300 млн років', atomicCenterX, atomicCenterY + 62);
+        }
+
+        // Canvas helper: rounded rect
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        window.onload = function () {
+            updateParams();
+            stepLeapSequence(0);
+            requestAnimationFrame(renderSimulation);
+        };
+    </script>
+
+</body>
+
+</html>
