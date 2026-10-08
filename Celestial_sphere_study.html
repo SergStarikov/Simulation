@@ -529,9 +529,14 @@
 
         function createPointGroup(elementId, position, color, labelText, labelSub, size) {
             const group = new THREE.Group();
-            const sz = size || 0.35;
 
-            // Core dot
+            // ========================================================
+            // >>> ПАРАМЕТР РОЗМІРУ ТОЧОК НА СФЕРІ <<<
+            // Змінюйте множник (0.7) або базовий розмір (0.24) тут:
+            const sz = (size ? size * 0.7 : 0.24);
+            // ========================================================
+
+            // Core dot (основна точка)
             const coreGeo = new THREE.SphereGeometry(sz, 16, 16);
             const coreMat = new THREE.MeshBasicMaterial({ color });
             tagMaterial(coreMat, 0.95, 1.0);
@@ -539,8 +544,8 @@
             core.userData.elementId = elementId;
             group.add(core);
 
-            // Glow
-            const glowGeo = new THREE.SphereGeometry(sz * 2.5, 16, 16);
+            // Glow (світлове коло / ореол)
+            const glowGeo = new THREE.SphereGeometry(sz * 1.5, 16, 16);
             const glowMat = new THREE.MeshBasicMaterial({ color });
             tagMaterial(glowMat, 0.15, 0.45);
             const glow = new THREE.Mesh(glowGeo, glowMat);
@@ -551,8 +556,8 @@
             const colorStr = '#' + new THREE.Color(color).getHexString();
             const label = createLabelSprite(labelText, labelSub, colorStr);
             const outDir = position.length() > 0.01
-                ? position.clone().normalize().multiplyScalar(2.2)
-                : new THREE.Vector3(1.5, -1, 1.5);
+                ? position.clone().normalize().multiplyScalar(1.8)
+                : new THREE.Vector3(1.2, -0.8, 1.2);
             label.position.copy(outDir);
             label.userData.elementId = elementId;
             group.add(label);
@@ -561,25 +566,48 @@
             return group;
         }
 
-        // ==================== STARFIELD ====================
+        // ==================== CELESTIAL VAULT (EQUATORIAL SYSTEM) ====================
+        // The celestial vault contains all celestial objects (background stars and
+        // the celestial coordinate grid), rotating around the East-West (X) axis
+        // according to the observer's latitude: rotation.x = (latitude - 90)°.
+        const celestialVault = new THREE.Group();
+        scene.add(celestialVault);
+
+        // --- 1. Background Starfield (Fixed to the Celestial Sphere) ---
         (function buildStarfield() {
             const geo = new THREE.BufferGeometry();
             const pos = [], cols = [];
-            for (let i = 0; i < 2500; i++) {
+            const count = 2500;
+
+            for (let i = 0; i < count; i++) {
                 const r = 70 + Math.random() * 30;
-                const theta = Math.random() * Math.PI * 2;
-                const phi = Math.acos(2 * Math.random() - 1);
-                pos.push(r * Math.sin(phi) * Math.cos(theta),
-                    r * Math.sin(phi) * Math.sin(theta),
-                    r * Math.cos(phi));
+                // Uniform spherical distribution in the equatorial frame
+                // Polar angle theta from local polar axis (+Y, towards PN)
+                const cosTheta = 2 * Math.random() - 1;
+                const sinTheta = Math.sqrt(Math.max(0, 1 - cosTheta * cosTheta));
+                const ra = Math.random() * Math.PI * 2; // Right ascension around Y
+
+                pos.push(
+                    r * sinTheta * Math.cos(ra), // X
+                    r * cosTheta,                // Y (aligned with PN / PS world axis)
+                    r * sinTheta * Math.sin(ra)  // Z
+                );
+
                 const b = 0.5 + Math.random() * 0.5;
                 cols.push(b, b, b * (0.9 + Math.random() * 0.1));
             }
+
+            // Prominent Polaris (North Star) positioned ~0.7° from the North Celestial Pole (+Y)
+            const rPolaris = 85;
+            pos.push(0.4, rPolaris, -0.4);
+            cols.push(1.0, 0.98, 0.85);
+
             geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
             geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
-            const mat = new THREE.PointsMaterial({ size: 0.25, vertexColors: true, transparent: true, opacity: 0.55, depthWrite: false });
+            const mat = new THREE.PointsMaterial({ size: 0.28, vertexColors: true, transparent: true, opacity: 0.65, depthWrite: false });
+            tagMaterial(mat, 0.65, 0.85);
             mat._isBackground = true;
-            scene.add(new THREE.Points(geo, mat));
+            celestialVault.add(new THREE.Points(geo, mat));
         })();
 
         // ==================== CELESTIAL SPHERE ====================
@@ -604,7 +632,7 @@
         sphereSurface.userData.elementId = 'celestial_sphere';
         celestialSphereGroup.add(sphereSurface);
 
-        // 2. Clear coordinate grid (parallels and meridians)
+        // 2. Clear coordinate grid (parallels of declination & hour circles)
         const sphereGridMat = new THREE.LineBasicMaterial({
             color: 0x38bdf8,
             transparent: true,
@@ -614,12 +642,12 @@
         tagMaterial(sphereGridMat, 0.32, 0.70);
         sphereGridMat._isBackground = true;
 
-        // Parallels (altitude circles every 15°)
-        const latAngles = [-75, -60, -45, -30, -15, 15, 30, 45, 60, 75];
-        latAngles.forEach(deg => {
-            const phi = THREE.MathUtils.degToRad(deg);
-            const r = R * Math.cos(phi);
-            const y = R * Math.sin(phi);
+        // Declination parallels (circles parallel to the celestial equator every 15°)
+        const decAngles = [-75, -60, -45, -30, -15, 15, 30, 45, 60, 75];
+        decAngles.forEach(deg => {
+            const dec = THREE.MathUtils.degToRad(deg);
+            const r = R * Math.cos(dec);
+            const y = R * Math.sin(dec);
             const pts = [];
             for (let i = 0; i <= 64; i++) {
                 const a = (i / 64) * Math.PI * 2;
@@ -631,7 +659,7 @@
             celestialSphereGroup.add(line);
         });
 
-        // Meridians (vertical circles through Z and Z' every 30°)
+        // Hour circles (meridians passing through PN and PS every 30°)
         for (let i = 0; i < 12; i++) {
             const a = (i / 12) * Math.PI * 2;
             const pts = [];
@@ -649,7 +677,8 @@
             celestialSphereGroup.add(line);
         }
 
-        scene.add(celestialSphereGroup);
+        // Attached to celestialVault to tilt with the world axis and stars
+        celestialVault.add(celestialSphereGroup);
 
         // ==================== HORIZON DISC ====================
         const discGeo = new THREE.CircleGeometry(R * 1.02, 64);
@@ -730,6 +759,11 @@
             const delta = THREE.MathUtils.degToRad(STAR_DEC);
             const h = THREE.MathUtils.degToRad(STAR_HA);
             const worldAxisDir = new THREE.Vector3(0, Math.sin(phi), -Math.cos(phi));
+
+            // Tilt celestial vault (background stars & celestial grid) to match latitude
+            if (typeof celestialVault !== 'undefined' && celestialVault) {
+                celestialVault.rotation.x = THREE.MathUtils.degToRad(latitude - 90);
+            }
 
             // Dynamic positions
             const posPN = new THREE.Vector3(0, R * Math.sin(phi), -R * Math.cos(phi));
